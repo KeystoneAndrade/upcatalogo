@@ -9,7 +9,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Import Supabase only when needed
-  const { createServerClient, type CookieOptions } = await import('@supabase/ssr')
+  const { createServerClient } = await import('@supabase/ssr')
 
   let response = NextResponse.next({
     request: {
