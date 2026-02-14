@@ -10,9 +10,14 @@ export async function middleware(request: NextRequest) {
     },
   })
 
+  // Check if environment variables exist
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return response
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         get(name: string) {
@@ -36,7 +41,12 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  await supabase.auth.getSession()
+  try {
+    await supabase.auth.getSession()
+  } catch (error) {
+    console.error('Supabase session error:', error)
+    return response
+  }
 
   // Multi-tenancy
   const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || 'upcatalogo.com.br'
@@ -65,38 +75,49 @@ export async function middleware(request: NextRequest) {
     !pathname.startsWith('/static')
 
   if (isStorefrontRoute && (tenantSubdomain || tenantCustomDomain)) {
-    let tenant = null
+    try {
+      let tenant = null
 
-    if (tenantSubdomain) {
-      const { data } = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('subdomain', tenantSubdomain)
-        .eq('status', 'active')
-        .single()
-      tenant = data
-    } else if (tenantCustomDomain) {
-      const { data } = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('custom_domain', tenantCustomDomain)
-        .eq('status', 'active')
-        .single()
-      tenant = data
-    }
+      if (tenantSubdomain) {
+        const { data } = await supabase
+          .from('tenants')
+          .select('*')
+          .eq('subdomain', tenantSubdomain)
+          .eq('status', 'active')
+          .single()
+        tenant = data
+      } else if (tenantCustomDomain) {
+        const { data } = await supabase
+          .from('tenants')
+          .select('*')
+          .eq('custom_domain', tenantCustomDomain)
+          .eq('status', 'active')
+          .single()
+        tenant = data
+      }
 
-    if (!tenant) {
+      if (!tenant) {
+        return NextResponse.rewrite(new URL('/404', request.url))
+      }
+
+      response.headers.set('x-tenant-id', tenant.id)
+      response.headers.set('x-tenant-subdomain', tenant.subdomain)
+    } catch (error) {
+      console.error('Tenant lookup error:', error)
       return NextResponse.rewrite(new URL('/404', request.url))
     }
-
-    response.headers.set('x-tenant-id', tenant.id)
-    response.headers.set('x-tenant-subdomain', tenant.subdomain)
   }
 
   // Auth protection
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  let session = null
+  try {
+    const {
+      data: { session: userSession },
+    } = await supabase.auth.getSession()
+    session = userSession
+  } catch (error) {
+    console.error('Auth session error:', error)
+  }
 
   if (pathname.startsWith('/dashboard')) {
     if (!session) {
