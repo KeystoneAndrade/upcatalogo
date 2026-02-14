@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:claude.ai)",
+      "Bash(dir:*)",
+      "Bash(ls:*)",
+      "Bash(npm install:*)",
+      "Bash(npx next build:*)",
+      "WebFetch(domain:supabase.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(\"C:\\\\upcatalogo\\\\.env.local\" << 'EOF'\n# Para usar em localhost, você precisa de um projeto Supabase\n\n# 1. Crie um projeto grátis em: https://supabase.com\n# 2. Na dashboard do Supabase, vá em Settings > API\n# 3. Copie a URL do projeto e a anon key abaixo\n\n# Supabase \\(PREENCHA COM SEUS DADOS\\)\nNEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co\nNEXT_PUBLIC_SUPABASE_ANON_KEY=sua-anon-key-aqui\n\n# App\nNEXT_PUBLIC_APP_URL=http://localhost:3000\nNEXT_PUBLIC_APP_DOMAIN=localhost\nEOF)",
+      "Bash(curl:*)",
+      "Bash(npm run dev:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(git init:*)",
+      "Bash(test:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
