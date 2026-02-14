@@ -43,7 +43,8 @@ export async function middleware(request: NextRequest) {
   const isMainDomain =
     hostname === appDomain ||
     hostname === `www.${appDomain}` ||
-    hostname === 'localhost'
+    hostname === 'localhost' ||
+    hostname.endsWith('.vercel.app') // Suporte para domínios Vercel
 
   let tenantSubdomain: string | null = null
   let tenantCustomDomain: string | null = null
@@ -51,7 +52,7 @@ export async function middleware(request: NextRequest) {
   if (!isMainDomain) {
     if (hostname.endsWith(`.${appDomain}`)) {
       tenantSubdomain = hostname.replace(`.${appDomain}`, '')
-    } else if (hostname !== 'localhost') {
+    } else if (hostname !== 'localhost' && !hostname.endsWith('.vercel.app')) {
       tenantCustomDomain = hostname
     }
   }
