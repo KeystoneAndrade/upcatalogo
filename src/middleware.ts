@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Middleware for authentication and routing
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
