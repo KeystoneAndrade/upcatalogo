@@ -15,7 +15,16 @@
       "Bash(findstr:*)",
       "Bash(git init:*)",
       "Bash(test:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: UP Catalogo v2 - Multi-tenant SaaS Platform\n\nFeatures:\n- Next.js 14 with App Router and TypeScript\n- Supabase backend with RLS\n- Multi-tenancy via subdomain/custom domain\n- Dashboard for store management\n- Public storefront with cart\n- WhatsApp checkout integration\n- Responsive UI with Tailwind CSS\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git config:*)",
+      "Bash(gh repo create:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(git commit:*)",
+      "mcp__mcp-registry__search_mcp_registry"
     ]
   }
 }
