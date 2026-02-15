@@ -7,17 +7,32 @@ export async function getTenant() {
   // Try to get tenant from subdomain header first
   const tenantSubdomain = headersList.get('x-tenant-subdomain')
 
-  if (!tenantSubdomain) return null
+  if (!tenantSubdomain) {
+    return null
+  }
 
-  const supabase = createClient()
+  try {
+    const supabase = createClient()
 
-  // Query by subdomain
-  const { data } = await supabase
-    .from('tenants')
-    .select('*')
-    .eq('subdomain', tenantSubdomain)
-    .eq('status', 'active')
-    .single()
+    // Query by subdomain
+    const { data, error } = await supabase
+      .from('tenants')
+      .select('*')
+      .eq('subdomain', tenantSubdomain)
+      .eq('status', 'active')
+      .single()
 
-  return data
+    if (error) {
+      console.error('Error fetching tenant:', {
+        subdomain: tenantSubdomain,
+        error: error.message,
+      })
+      return null
+    }
+
+    return data
+  } catch (error) {
+    console.error('Exception fetching tenant:', error)
+    return null
+  }
 }
