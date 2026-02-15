@@ -3,12 +3,6 @@ import { NextResponse, type NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   const { pathname, hostname } = request.nextUrl
 
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  })
-
   // Get app domain from env or use default
   const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || 'centroo.com.br'
 
@@ -29,12 +23,22 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // If it's a tenant subdomain, add it to headers
+  // If it's a tenant subdomain, rewrite to include it in the URL
   if (tenantSubdomain) {
-    response.headers.set('x-tenant-subdomain', tenantSubdomain)
+    // Clone the URL and add tenant info
+    const requestHeaders = new Headers(request.headers)
+    requestHeaders.set('x-tenant-subdomain', tenantSubdomain)
+
+    const response = NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    })
+
+    return response
   }
 
-  return response
+  return NextResponse.next()
 }
 
 export const config = {
