@@ -25,11 +25,6 @@ export function middleware(request: NextRequest) {
 
   // If it's a tenant subdomain
   if (tenantSubdomain) {
-    // Redirect root to /produtos
-    if (pathname === '/') {
-      return NextResponse.redirect(new URL('/produtos', request.url))
-    }
-
     // Clone the URL and add tenant info
     const requestHeaders = new Headers(request.headers)
     requestHeaders.set('x-tenant-subdomain', tenantSubdomain)
