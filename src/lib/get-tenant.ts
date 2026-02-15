@@ -3,15 +3,20 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function getTenant() {
   const headersList = headers()
-  const tenantId = headersList.get('x-tenant-id')
 
-  if (!tenantId) return null
+  // Try to get tenant from subdomain header first
+  const tenantSubdomain = headersList.get('x-tenant-subdomain')
+
+  if (!tenantSubdomain) return null
 
   const supabase = createClient()
+
+  // Query by subdomain
   const { data } = await supabase
     .from('tenants')
     .select('*')
-    .eq('id', tenantId)
+    .eq('subdomain', tenantSubdomain)
+    .eq('status', 'active')
     .single()
 
   return data
