@@ -1,7 +1,17 @@
 import Link from 'next/link'
 import { ArrowRight, Store, Smartphone, Zap } from 'lucide-react'
+import { getTenant } from '@/lib/get-tenant'
+import { ProductsList } from '@/components/storefront/products-list'
 
-export default function HomePage() {
+export default async function HomePage() {
+  const tenant = await getTenant()
+
+  // If tenant found, show storefront
+  if (tenant) {
+    return <ProductsList />
+  }
+
+  // Otherwise show landing page
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       <header className="container mx-auto px-4 py-6">
