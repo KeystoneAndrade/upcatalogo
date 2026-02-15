@@ -5,7 +5,8 @@ import { notFound } from 'next/navigation'
 export default async function StorefrontLayout({ children }: { children: React.ReactNode }) {
   const tenant = await getTenant()
 
-  // If no tenant, this is the main domain - show default layout
+  // If no tenant found and user is on a subdomain, return 404
+  // This will trigger notFound() which shows a 404 page
   if (!tenant) {
     return <>{children}</>
   }

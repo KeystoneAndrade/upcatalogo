@@ -12,9 +12,6 @@ export function middleware(request: NextRequest) {
   // Get app domain from env or use default
   const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || 'centroo.com.br'
 
-  // Debug log
-  console.log('[Middleware] Hostname:', hostname, 'Domain:', appDomain)
-
   // Detect if it's a main domain or tenant subdomain
   const isMainDomain =
     hostname === appDomain ||
@@ -34,10 +31,7 @@ export function middleware(request: NextRequest) {
 
   // If it's a tenant subdomain, add it to headers
   if (tenantSubdomain) {
-    console.log('[Middleware] Detected tenant subdomain:', tenantSubdomain)
     response.headers.set('x-tenant-subdomain', tenantSubdomain)
-  } else {
-    console.log('[Middleware] Main domain - no tenant')
   }
 
   return response
