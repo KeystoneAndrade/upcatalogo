@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { ProductCard } from '@/components/storefront/product-card'
 import { StorefrontHeader } from '@/components/storefront/header'
+import Link from 'next/link'
+import { FolderOpen } from 'lucide-react'
 
 export async function ProductsList() {
   const tenant = await getTenant()
@@ -23,6 +25,9 @@ export async function ProductsList() {
     .eq('is_active', true)
     .order('display_order')
 
+  // Apenas categorias raiz (sem parent_id)
+  const rootCategories = (categories || []).filter((cat) => !cat.parent_id)
+
   return (
     <div className="min-h-screen bg-gray-50">
       <StorefrontHeader tenant={tenant} />
@@ -30,16 +35,21 @@ export async function ProductsList() {
         <div className="space-y-6">
           <h1 className="text-2xl font-bold">Todos os Produtos</h1>
 
-          {categories && categories.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {categories.map((cat) => (
-                <span
-                  key={cat.id}
-                  className="px-3 py-1 bg-white border rounded-full text-sm cursor-pointer hover:bg-gray-50"
-                >
-                  {cat.name}
-                </span>
-              ))}
+          {rootCategories.length > 0 && (
+            <div className="space-y-2">
+              <h2 className="text-sm font-medium text-muted-foreground">Categorias</h2>
+              <div className="flex flex-wrap gap-2">
+                {rootCategories.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    href={`/categoria/${cat.slug}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border rounded-full text-sm hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                  >
+                    <FolderOpen className="h-3.5 w-3.5 text-gray-400" />
+                    {cat.name}
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
 

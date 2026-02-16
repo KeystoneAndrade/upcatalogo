@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { slugify } from '@/lib/utils'
+import { buildCategoryTree, flattenTree } from '@/lib/categories'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,7 +17,7 @@ import { VariantManager, VariantsData } from './variant-manager'
 
 interface ProductFormProps {
   tenantId: string
-  categories: Array<{ id: string; name: string }>
+  categories: Array<{ id: string; name: string; parent_id?: string | null }>
   product?: any
 }
 
@@ -35,6 +36,9 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
   const isEditing = !!product
   const [loading, setLoading] = useState(false)
   const [deleting, setDeleting] = useState(false)
+
+  const categoryTree = useMemo(() => buildCategoryTree(categories), [categories])
+  const flatCategories = useMemo(() => flattenTree(categoryTree), [categoryTree])
 
   const existingVariants = parseVariantsFromProduct(product)
   const [hasVariants, setHasVariants] = useState(!!existingVariants)
@@ -244,8 +248,10 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
             <Label htmlFor="category_id">Categoria</Label>
             <Select id="category_id" name="category_id" defaultValue={product?.category_id || ''}>
               <option value="">Sem categoria</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              {flatCategories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {'— '.repeat(cat.level)}{cat.name}
+                </option>
               ))}
             </Select>
           </div>

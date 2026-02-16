@@ -1,16 +1,75 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { slugify } from '@/lib/utils'
+import { buildCategoryTree, flattenTree, type CategoryNode } from '@/lib/categories'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select } from '@/components/ui/select'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, ChevronRight, FolderOpen, Folder } from 'lucide-react'
 import { toast } from 'sonner'
+
+function CategoryTreeItem({
+  node,
+  level,
+  onEdit,
+  onDelete,
+}: {
+  node: CategoryNode
+  level: number
+  onEdit: (cat: any) => void
+  onDelete: (id: string) => void
+}) {
+  const hasChildren = node.children.length > 0
+
+  return (
+    <>
+      <div className="flex items-center justify-between p-4 border-b last:border-0">
+        <div className="flex items-center space-x-2" style={{ paddingLeft: `${level * 24}px` }}>
+          {level > 0 && (
+            <ChevronRight className="h-3 w-3 text-gray-400" />
+          )}
+          {hasChildren ? (
+            <FolderOpen className="h-4 w-4 text-yellow-500" />
+          ) : (
+            <Folder className="h-4 w-4 text-gray-400" />
+          )}
+          <span className="font-medium">{node.name}</span>
+          <Badge variant={node.is_active ? 'default' : 'secondary'}>
+            {node.is_active ? 'Ativa' : 'Inativa'}
+          </Badge>
+          {hasChildren && (
+            <span className="text-xs text-muted-foreground">
+              ({node.children.length} sub)
+            </span>
+          )}
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button variant="ghost" size="icon" onClick={() => onEdit(node)}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => onDelete(node.id)}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      {node.children.map((child) => (
+        <CategoryTreeItem
+          key={child.id}
+          node={child}
+          level={level + 1}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      ))}
+    </>
+  )
+}
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<any[]>([])
@@ -21,6 +80,9 @@ export default function CategoriesPage() {
   const [tenantId, setTenantId] = useState<string>('')
 
   const supabase = createClient()
+
+  const tree = useMemo(() => buildCategoryTree(categories), [categories])
+  const flatOptions = useMemo(() => flattenTree(tree), [tree])
 
   useEffect(() => {
     loadData()
@@ -49,15 +111,23 @@ export default function CategoriesPage() {
     setSaving(true)
     const formData = new FormData(e.currentTarget)
     const name = formData.get('name') as string
+    const parentId = formData.get('parent_id') as string
+    const isActive = formData.get('is_active') === 'on'
 
-    const data = {
+    const data: any = {
       tenant_id: tenantId,
       name,
       slug: slugify(name),
-      is_active: true,
+      parent_id: parentId || null,
+      is_active: isActive,
     }
 
     if (editingCategory) {
+      if (parentId === editingCategory.id) {
+        toast.error('Uma categoria nao pode ser pai de si mesma')
+        setSaving(false)
+        return
+      }
       const { error } = await supabase.from('categories').update(data).eq('id', editingCategory.id)
       if (error) { toast.error('Erro ao atualizar'); setSaving(false); return }
       toast.success('Categoria atualizada!')
@@ -74,11 +144,16 @@ export default function CategoriesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Excluir categoria?')) return
+    if (!confirm('Excluir categoria? Subcategorias ficarao sem pai.')) return
     const { error } = await supabase.from('categories').delete().eq('id', id)
     if (error) { toast.error('Erro ao excluir'); return }
     toast.success('Categoria excluida!')
     loadData()
+  }
+
+  function openEdit(cat: any) {
+    setEditingCategory(cat)
+    setDialogOpen(true)
   }
 
   if (loading) return <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
@@ -100,24 +175,15 @@ export default function CategoriesPage() {
               Nenhuma categoria cadastrada
             </div>
           ) : (
-            <div className="divide-y">
-              {categories.map((cat) => (
-                <div key={cat.id} className="flex items-center justify-between p-4">
-                  <div className="flex items-center space-x-3">
-                    <span className="font-medium">{cat.name}</span>
-                    <Badge variant={cat.is_active ? 'default' : 'secondary'}>
-                      {cat.is_active ? 'Ativa' : 'Inativa'}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button variant="ghost" size="icon" onClick={() => { setEditingCategory(cat); setDialogOpen(true) }}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(cat.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+            <div>
+              {tree.map((node) => (
+                <CategoryTreeItem
+                  key={node.id}
+                  node={node}
+                  level={0}
+                  onEdit={openEdit}
+                  onDelete={handleDelete}
+                />
               ))}
             </div>
           )}
@@ -133,6 +199,34 @@ export default function CategoriesPage() {
             <div className="space-y-2">
               <Label htmlFor="cat-name">Nome</Label>
               <Input id="cat-name" name="name" required defaultValue={editingCategory?.name} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="parent_id">Categoria pai</Label>
+              <Select
+                id="parent_id"
+                name="parent_id"
+                defaultValue={editingCategory?.parent_id || ''}
+              >
+                <option value="">Nenhuma (raiz)</option>
+                {flatOptions
+                  .filter((opt) => opt.id !== editingCategory?.id)
+                  .map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {'— '.repeat(opt.level)}{opt.name}
+                    </option>
+                  ))}
+              </Select>
+            </div>
+            <div>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  name="is_active"
+                  defaultChecked={editingCategory?.is_active ?? true}
+                  className="rounded border-gray-300"
+                />
+                <span className="text-sm">Ativa</span>
+              </label>
             </div>
             <div className="flex justify-end space-x-3">
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
