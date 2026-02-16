@@ -17,17 +17,30 @@ interface ProductCardProps {
     compare_at_price: number | null
     image_url: string | null
     is_active: boolean
+    variants?: any
   }
+}
+
+function productHasVariants(variants: any): boolean {
+  if (!variants) return false
+  if (Array.isArray(variants) && variants.length === 0) return false
+  return !!(variants.attributes && Array.isArray(variants.attributes) && variants.attributes.length > 0 && variants.items?.length > 0)
 }
 
 export function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((s) => s.addItem)
+  const hasVariants = productHasVariants(product.variants)
   const discount = product.compare_at_price
     ? calculateDiscount(product.compare_at_price, product.price)
     : 0
 
   function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault()
+    if (hasVariants) {
+      // Redirecionar para pagina de detalhe para escolher variacao
+      window.location.href = `/produtos/${product.slug}`
+      return
+    }
     addItem({
       productId: product.id,
       name: product.name,
@@ -52,15 +65,18 @@ export function ProductCard({ product }: ProductCardProps) {
               <ShoppingCart className="h-12 w-12" />
             </div>
           )}
-          {discount > 0 && (
+          {discount > 0 && !hasVariants && (
             <Badge className="absolute top-2 left-2 bg-red-500">-{discount}%</Badge>
           )}
         </div>
         <div className="p-4">
           <h3 className="font-medium text-sm line-clamp-2 mb-2">{product.name}</h3>
           <div className="flex items-center space-x-2">
+            {hasVariants && (
+              <span className="text-xs text-muted-foreground">A partir de</span>
+            )}
             <span className="font-bold text-lg">{formatCurrency(product.price)}</span>
-            {product.compare_at_price && (
+            {product.compare_at_price && !hasVariants && (
               <span className="text-sm text-muted-foreground line-through">
                 {formatCurrency(product.compare_at_price)}
               </span>
@@ -73,7 +89,7 @@ export function ProductCard({ product }: ProductCardProps) {
             onClick={handleAddToCart}
           >
             <ShoppingCart className="h-4 w-4 mr-1" />
-            Adicionar
+            {hasVariants ? 'Ver opcoes' : 'Adicionar'}
           </Button>
         </div>
       </div>

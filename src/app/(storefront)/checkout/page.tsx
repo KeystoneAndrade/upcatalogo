@@ -169,7 +169,7 @@ export default function CheckoutPage() {
     const itemsList = items
       .map(
         (item) =>
-          `- ${item.quantity}x ${item.name} (${formatCurrency(item.price * item.quantity)})`
+          `- ${item.quantity}x ${item.name}${item.variant ? ' (' + item.variant + ')' : ''} (${formatCurrency(item.price * item.quantity)})`
       )
       .join('\n')
 

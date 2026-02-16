@@ -12,6 +12,7 @@ import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { VariantManager, VariantsData } from './variant-manager'
 
 interface ProductFormProps {
   tenantId: string
@@ -19,11 +20,27 @@ interface ProductFormProps {
   product?: any
 }
 
+function parseVariantsFromProduct(product: any): VariantsData | null {
+  if (!product?.variants) return null
+  const v = product.variants
+  if (Array.isArray(v) && v.length === 0) return null
+  if (v.attributes && Array.isArray(v.attributes) && v.attributes.length > 0) {
+    return v as VariantsData
+  }
+  return null
+}
+
 export function ProductForm({ tenantId, categories, product }: ProductFormProps) {
   const router = useRouter()
   const isEditing = !!product
   const [loading, setLoading] = useState(false)
   const [deleting, setDeleting] = useState(false)
+
+  const existingVariants = parseVariantsFromProduct(product)
+  const [hasVariants, setHasVariants] = useState(!!existingVariants)
+  const [variantsData, setVariantsData] = useState<VariantsData>(
+    existingVariants || { attributes: [], items: [] }
+  )
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -42,12 +59,24 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
     const featured = formData.get('featured') === 'on'
     const imageUrl = formData.get('image_url') as string
 
+    // Se tem variacoes, ajustar preco para o menor das variacoes
+    let finalPrice = price
+    let variants: any = []
+
+    if (hasVariants && variantsData.items.length > 0) {
+      variants = variantsData
+      const activeItems = variantsData.items.filter(i => i.is_active)
+      if (activeItems.length > 0) {
+        finalPrice = Math.min(...activeItems.map(i => i.price))
+      }
+    }
+
     const data = {
       tenant_id: tenantId,
       name,
       slug: slugify(name),
       description: description || null,
-      price,
+      price: finalPrice,
       compare_at_price: compareAtPrice ? parseFloat(compareAtPrice) : null,
       category_id: categoryId || null,
       sku: sku || null,
@@ -56,6 +85,7 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
       is_active: isActive,
       featured,
       image_url: imageUrl || null,
+      variants,
     }
 
     const supabase = createClient()
@@ -129,31 +159,80 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="price">Preco (R$) *</Label>
+              <Label htmlFor="price">
+                {hasVariants ? 'Preco base (R$)' : 'Preco (R$) *'}
+              </Label>
               <Input id="price" name="price" type="number" step="0.01" min="0" required defaultValue={product?.price} />
+              {hasVariants && (
+                <p className="text-xs text-muted-foreground">
+                  O preco exibido sera o menor entre as variacoes ativas
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="compare_at_price">Preco "De" (R$)</Label>
               <Input id="compare_at_price" name="compare_at_price" type="number" step="0.01" min="0" defaultValue={product?.compare_at_price} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="sku">SKU</Label>
-              <Input id="sku" name="sku" defaultValue={product?.sku} />
+          {!hasVariants && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="sku">SKU</Label>
+                <Input id="sku" name="sku" defaultValue={product?.sku} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="stock_quantity">Quantidade em estoque</Label>
+                <Input id="stock_quantity" name="stock_quantity" type="number" min="0" defaultValue={product?.stock_quantity || 0} />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="stock_quantity">Quantidade em estoque</Label>
-              <Input id="stock_quantity" name="stock_quantity" type="number" min="0" defaultValue={product?.stock_quantity || 0} />
+          )}
+          {!hasVariants && (
+            <div className="flex items-center space-x-6">
+              <label className="flex items-center space-x-2">
+                <input type="checkbox" name="manage_stock" defaultChecked={product?.manage_stock} className="rounded border-gray-300" />
+                <span className="text-sm">Gerenciar estoque</span>
+              </label>
             </div>
-          </div>
-          <div className="flex items-center space-x-6">
+          )}
+          {hasVariants && (
+            <>
+              <input type="hidden" name="sku" value="" />
+              <input type="hidden" name="stock_quantity" value="0" />
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Variacoes */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Variacoes</CardTitle>
             <label className="flex items-center space-x-2">
-              <input type="checkbox" name="manage_stock" defaultChecked={product?.manage_stock} className="rounded border-gray-300" />
-              <span className="text-sm">Gerenciar estoque</span>
+              <input
+                type="checkbox"
+                checked={hasVariants}
+                onChange={(e) => {
+                  setHasVariants(e.target.checked)
+                  if (!e.target.checked) {
+                    setVariantsData({ attributes: [], items: [] })
+                  }
+                }}
+                className="rounded border-gray-300"
+              />
+              <span className="text-sm">Este produto tem variacoes</span>
             </label>
           </div>
-        </CardContent>
+        </CardHeader>
+        {hasVariants && (
+          <CardContent>
+            <VariantManager
+              value={variantsData}
+              onChange={setVariantsData}
+              basePrice={product?.price || 0}
+            />
+          </CardContent>
+        )}
       </Card>
 
       <Card>
