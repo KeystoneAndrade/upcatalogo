@@ -90,13 +90,21 @@ export function VariantManager({ value, onChange, basePrice }: VariantManagerPro
   }
 
   function addOption(attrIndex: number) {
-    const optionValue = (newOptionInputs[attrIndex] || '').trim()
-    if (!optionValue) return
+    const input = (newOptionInputs[attrIndex] || '').trim()
+    if (!input) return
+
     const attr = value.attributes[attrIndex]
-    if (attr.options.includes(optionValue)) return
+
+    // Permitir múltiplas opções separadas por vírgula ou ponto-e-vírgula
+    const newOptions = input
+      .split(/[,;]/)
+      .map(opt => opt.trim())
+      .filter(opt => opt && !attr.options.includes(opt))
+
+    if (newOptions.length === 0) return
 
     const newAttrs = [...value.attributes]
-    newAttrs[attrIndex] = { ...attr, options: [...attr.options, optionValue] }
+    newAttrs[attrIndex] = { ...attr, options: [...attr.options, ...newOptions] }
     onChange({ ...value, attributes: newAttrs })
     setNewOptionInputs({ ...newOptionInputs, [attrIndex]: '' })
   }
@@ -208,7 +216,7 @@ export function VariantManager({ value, onChange, basePrice }: VariantManagerPro
 
               <div className="flex gap-2">
                 <Input
-                  placeholder="Adicionar opcao (ex: Azul, P, 500ml)"
+                  placeholder="Adicionar opcoes (separe por vírgula: Azul, Vermelho, Preto)"
                   value={newOptionInputs[attrIndex] || ''}
                   onChange={(e) =>
                     setNewOptionInputs({ ...newOptionInputs, [attrIndex]: e.target.value })
