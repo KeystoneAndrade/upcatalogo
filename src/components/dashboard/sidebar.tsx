@@ -11,6 +11,7 @@ import {
   Truck,
   CreditCard,
   Tag,
+  TicketPercent,
   Store,
   Image as ImageIcon,
 } from 'lucide-react'
@@ -28,6 +29,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Produtos', href: '/dashboard/products', icon: Package },
   { name: 'Categorias', href: '/dashboard/categories', icon: Tag },
+  { name: 'Cupons', href: '/dashboard/coupons', icon: TicketPercent },
   { name: 'Banners', href: '/dashboard/banners', icon: ImageIcon },
   { name: 'Pedidos', href: '/dashboard/orders', icon: ShoppingCart },
   { name: 'Entrega', href: '/dashboard/shipping', icon: Truck },
