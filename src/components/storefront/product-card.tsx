@@ -50,10 +50,9 @@ export function ProductCard({ product }: ProductCardProps) {
       price: product.price,
       image: product.image_url,
     })
+    toast.success('Adicionado ao carrinho!')
     if (settings.open_cart_on_add) {
-      openMiniCart()
-    } else {
-      toast.success('Adicionado ao carrinho!')
+      setTimeout(() => openMiniCart(), 300)
     }
   }
 

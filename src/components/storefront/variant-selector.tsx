@@ -125,10 +125,9 @@ export function VariantSelector({ product }: VariantSelectorProps) {
       image: selectedVariant.image_url || product.image_url,
       variant: variantLabel,
     })
+    toast.success('Adicionado ao carrinho!')
     if (settings.open_cart_on_add) {
-      openMiniCart()
-    } else {
-      toast.success('Adicionado ao carrinho!')
+      setTimeout(() => openMiniCart(), 300)
     }
   }
 
