@@ -47,12 +47,12 @@ export function BannerSlider({ banners }: BannerSliderProps) {
 
   return (
     <div className="relative w-full bg-gray-900 overflow-hidden rounded-lg">
-      {/* Banner images */}
+      {/* Banner content */}
       <div className="relative aspect-video">
         {banners.map((banner, idx) => (
           <div
             key={banner.id}
-            className={`absolute inset-0 transition-opacity duration-500 ${idx === current ? 'opacity-100' : 'opacity-0'
+            className={`absolute inset-0 transition-opacity duration-500 ${idx === current ? 'opacity-100 z-0' : 'opacity-0 -z-10'
               }`}
           >
             {banner.link_url ? (
@@ -60,38 +60,49 @@ export function BannerSlider({ banners }: BannerSliderProps) {
                 href={banner.link_url}
                 target={banner.open_in_new_tab ? '_blank' : undefined}
                 rel={banner.open_in_new_tab ? 'noopener noreferrer' : undefined}
+                className="block w-full h-full relative group"
               >
-                <div className="relative w-full h-full cursor-pointer group">
-                  <img
-                    src={banner.image_url}
-                    alt={banner.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
+                <img
+                  src={banner.image_url}
+                  alt={banner.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-6">
+                  <div className="text-white max-w-2xl">
+                    <h2 className="text-3xl md:text-4xl font-bold mb-2">
+                      {banner.title}
+                    </h2>
+                    {banner.description && (
+                      <p className="text-gray-200 text-sm md:text-base mb-4">
+                        {banner.description}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </Link>
             ) : (
-              <img
-                src={banner.image_url}
-                alt={banner.title}
-                className="w-full h-full object-cover"
-              />
+              <div className="w-full h-full relative">
+                <img
+                  src={banner.image_url}
+                  alt={banner.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-6">
+                  <div className="text-white max-w-2xl">
+                    <h2 className="text-3xl md:text-4xl font-bold mb-2">
+                      {banner.title}
+                    </h2>
+                    {banner.description && (
+                      <p className="text-gray-200 text-sm md:text-base mb-4">
+                        {banner.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         ))}
-
-        {/* Content overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-6">
-          <div className="text-white max-w-2xl">
-            <h2 className="text-3xl md:text-4xl font-bold mb-2">
-              {activeBanner.title}
-            </h2>
-            {activeBanner.description && (
-              <p className="text-gray-200 text-sm md:text-base mb-4">
-                {activeBanner.description}
-              </p>
-            )}
-          </div>
-        </div>
 
         {/* Navigation arrows */}
         {banners.length > 1 && (
@@ -125,8 +136,8 @@ export function BannerSlider({ banners }: BannerSliderProps) {
                   setTimeout(() => setAutoPlay(true), 8000)
                 }}
                 className={`h-2 rounded-full transition-all ${idx === current
-                    ? 'bg-white w-8'
-                    : 'bg-white/50 w-2 hover:bg-white/75'
+                  ? 'bg-white w-8'
+                  : 'bg-white/50 w-2 hover:bg-white/75'
                   }`}
                 aria-label={`Ir para banner ${idx + 1}`}
               />
