@@ -43,13 +43,11 @@ export const useCartStore = create<CartStore>()(
                   ? { ...i, quantity: i.quantity + 1 }
                   : i
               ),
-              isOpen: true, // Abre o carrinho ao adicionar item existente
             }
           }
 
-          return { 
+          return {
             items: [...state.items, { ...item, quantity: 1 }],
-            isOpen: true, // Abre o carrinho ao adicionar novo item
           }
         })
       },
