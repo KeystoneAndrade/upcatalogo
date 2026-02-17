@@ -10,6 +10,7 @@ interface Banner {
   description: string | null
   image_url: string
   link_url: string | null
+  open_in_new_tab?: boolean
 }
 
 interface BannerSliderProps {
@@ -51,12 +52,15 @@ export function BannerSlider({ banners }: BannerSliderProps) {
         {banners.map((banner, idx) => (
           <div
             key={banner.id}
-            className={`absolute inset-0 transition-opacity duration-500 ${
-              idx === current ? 'opacity-100' : 'opacity-0'
-            }`}
+            className={`absolute inset-0 transition-opacity duration-500 ${idx === current ? 'opacity-100' : 'opacity-0'
+              }`}
           >
             {banner.link_url ? (
-              <Link href={banner.link_url}>
+              <Link
+                href={banner.link_url}
+                target={banner.open_in_new_tab ? '_blank' : undefined}
+                rel={banner.open_in_new_tab ? 'noopener noreferrer' : undefined}
+              >
                 <div className="relative w-full h-full cursor-pointer group">
                   <img
                     src={banner.image_url}
@@ -120,11 +124,10 @@ export function BannerSlider({ banners }: BannerSliderProps) {
                   setCurrent(idx)
                   setTimeout(() => setAutoPlay(true), 8000)
                 }}
-                className={`h-2 rounded-full transition-all ${
-                  idx === current
+                className={`h-2 rounded-full transition-all ${idx === current
                     ? 'bg-white w-8'
                     : 'bg-white/50 w-2 hover:bg-white/75'
-                }`}
+                  }`}
                 aria-label={`Ir para banner ${idx + 1}`}
               />
             ))}

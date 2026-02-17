@@ -17,6 +17,7 @@ interface Banner {
   description: string | null
   image_url: string
   link_url: string | null
+  open_in_new_tab: boolean
   is_active: boolean
   display_order: number
 }
@@ -26,6 +27,7 @@ interface FormData {
   description: string
   image_url: string
   link_url: string
+  open_in_new_tab: boolean
   is_active: boolean
   display_order: number
 }
@@ -42,6 +44,7 @@ export default function BannersPage() {
     description: '',
     image_url: '',
     link_url: '',
+    open_in_new_tab: false,
     is_active: true,
     display_order: 0,
   })
@@ -80,6 +83,7 @@ export default function BannersPage() {
       description: '',
       image_url: '',
       link_url: '',
+      open_in_new_tab: false,
       is_active: true,
       display_order: 0,
     })
@@ -93,6 +97,7 @@ export default function BannersPage() {
       description: banner.description || '',
       image_url: banner.image_url,
       link_url: banner.link_url || '',
+      open_in_new_tab: banner.open_in_new_tab || false,
       is_active: banner.is_active,
       display_order: banner.display_order,
     })
@@ -248,17 +253,32 @@ export default function BannersPage() {
                   onChange={(e) => setFormData({ ...formData, display_order: Number(e.target.value) })}
                 />
               </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  checked={formData.is_active}
-                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="rounded"
-                />
-                <label htmlFor="is_active" className="text-sm cursor-pointer">
-                  Ativo
-                </label>
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="is_active"
+                    checked={formData.is_active}
+                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                    className="rounded"
+                  />
+                  <label htmlFor="is_active" className="text-sm cursor-pointer">
+                    Ativo
+                  </label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="open_in_new_tab"
+                    checked={formData.open_in_new_tab}
+                    onChange={(e) => setFormData({ ...formData, open_in_new_tab: e.target.checked })}
+                    className="rounded"
+                  />
+                  <label htmlFor="open_in_new_tab" className="text-sm cursor-pointer">
+                    Abrir em nova aba
+                  </label>
+                </div>
               </div>
               <div className="flex gap-2 pt-4">
                 <Button type="submit" disabled={saving}>
