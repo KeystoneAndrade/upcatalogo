@@ -16,6 +16,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [tenant, setTenant] = useState<any>(null)
   const [openCartOnAdd, setOpenCartOnAdd] = useState(false)
+  const [bannersPerView, setBannersPerView] = useState(1)
   const supabase = createClient()
 
   useEffect(() => {
@@ -32,6 +33,7 @@ export default function SettingsPage() {
     setTenant(data)
     const settings = (data?.settings as any) || {}
     setOpenCartOnAdd(!!settings.open_cart_on_add)
+    setBannersPerView(settings.banners_per_view || 1)
     setLoading(false)
   }
 
@@ -57,6 +59,7 @@ export default function SettingsPage() {
         settings: {
           ...currentSettings,
           open_cart_on_add: openCartOnAdd,
+          banners_per_view: bannersPerView,
         },
       })
       .eq('id', tenant.id)
@@ -123,17 +126,38 @@ export default function SettingsPage() {
                 role="switch"
                 aria-checked={openCartOnAdd}
                 onClick={() => setOpenCartOnAdd(!openCartOnAdd)}
-                className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 ${
-                  openCartOnAdd ? 'bg-black' : 'bg-gray-200'
-                }`}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 ${openCartOnAdd ? 'bg-black' : 'bg-gray-200'
+                  }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                    openCartOnAdd ? 'translate-x-5' : 'translate-x-0'
-                  }`}
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${openCartOnAdd ? 'translate-x-5' : 'translate-x-0'
+                    }`}
                 />
               </button>
             </label>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Home</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="banners_per_view">Quantidade de banners por slide</Label>
+              <div className="flex items-center space-x-4">
+                <Input
+                  id="banners_per_view"
+                  type="number"
+                  min={1}
+                  max={4}
+                  value={bannersPerView}
+                  onChange={(e) => setBannersPerView(Number(e.target.value))}
+                  className="w-24"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Define quantos banners aparecem ao mesmo tempo no slide (Desktop). No mobile sempre exibira 1.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

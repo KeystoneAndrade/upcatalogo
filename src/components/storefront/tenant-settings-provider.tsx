@@ -4,6 +4,7 @@ import { createContext, useContext } from 'react'
 
 interface TenantSettings {
   open_cart_on_add?: boolean
+  banners_per_view?: number
 }
 
 const TenantSettingsContext = createContext<TenantSettings>({})
