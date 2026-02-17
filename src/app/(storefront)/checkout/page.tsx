@@ -21,6 +21,7 @@ import {
   Search,
   AlertCircle,
   CheckCircle2,
+  Tag,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -670,6 +671,7 @@ _Pedido via UP Catalogo_`
                       {formatCurrency(item.price * item.quantity)}
                     </p>
                   </div>
+                )
               })}
 
               {/* Coupon Input */}
