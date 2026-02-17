@@ -246,7 +246,7 @@ export default function BannersPage() {
                     max={4}
                     value={bannersPerViewDesktop}
                     onChange={(e) => setBannersPerViewDesktop(Number(e.target.value))}
-                    className="w-10 h-7 bg-gray-50 border border-gray-200 rounded text-center font-bold text-gray-900 focus:ring-1 focus:ring-primary outline-none transition-all"
+                    className="w-20 h-9 bg-gray-100 border border-gray-300 rounded-md text-center font-bold text-lg text-gray-900 focus:ring-2 focus:ring-primary outline-none transition-all"
                   />
                   <span className="text-gray-400 text-[10px] font-medium">unid.</span>
                 </div>
@@ -264,7 +264,7 @@ export default function BannersPage() {
                     max={2}
                     value={bannersPerViewMobile}
                     onChange={(e) => setBannersPerViewMobile(Number(e.target.value))}
-                    className="w-10 h-7 bg-gray-50 border border-gray-200 rounded text-center font-bold text-gray-900 focus:ring-1 focus:ring-primary outline-none transition-all"
+                    className="w-20 h-9 bg-gray-100 border border-gray-300 rounded-md text-center font-bold text-lg text-gray-900 focus:ring-2 focus:ring-primary outline-none transition-all"
                   />
                   <span className="text-gray-400 text-[10px] font-medium">unid.</span>
                 </div>
