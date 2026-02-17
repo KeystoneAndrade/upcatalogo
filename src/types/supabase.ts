@@ -310,6 +310,7 @@ export interface Database {
           shipping_method: string
           shipping_zone_id: string | null
           shipping_method_id: string | null
+          coupon_code: string | null
           status: 'pending' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled'
           customer_notes: string | null
           internal_notes: string | null
@@ -339,6 +340,7 @@ export interface Database {
           shipping_method: string
           shipping_zone_id?: string | null
           shipping_method_id?: string | null
+          coupon_code?: string | null
           status?: 'pending' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled'
           customer_notes?: string | null
           internal_notes?: string | null
@@ -368,6 +370,7 @@ export interface Database {
           shipping_method?: string
           shipping_zone_id?: string | null
           shipping_method_id?: string | null
+          coupon_code?: string | null
           status?: 'pending' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled'
           customer_notes?: string | null
           internal_notes?: string | null
@@ -478,6 +481,50 @@ export interface Database {
           delivery_time_max?: number | null
           is_active?: boolean
           display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      coupons: {
+        Row: {
+          id: string
+          tenant_id: string
+          code: string
+          discount_type: 'percentage' | 'fixed'
+          discount_value: number
+          min_purchase_amount: number | null
+          max_usage_limit: number | null
+          usage_count: number
+          expiration_date: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          code: string
+          discount_type: 'percentage' | 'fixed'
+          discount_value: number
+          min_purchase_amount?: number | null
+          max_usage_limit?: number | null
+          usage_count?: number
+          expiration_date?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          code?: string
+          discount_type?: 'percentage' | 'fixed'
+          discount_value?: number
+          min_purchase_amount?: number | null
+          max_usage_limit?: number | null
+          usage_count?: number
+          expiration_date?: string | null
+          is_active?: boolean
           created_at?: string
           updated_at?: string
         }

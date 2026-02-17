@@ -49,6 +49,11 @@ export default function CheckoutPage() {
   const [cepSearched, setCepSearched] = useState(false)
   const [searchingCep, setSearchingCep] = useState(false)
 
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('')
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null)
+  const [validatingCoupon, setValidatingCoupon] = useState(false)
+
   useEffect(() => {
     setMounted(true)
     loadTenantData()
@@ -151,6 +156,66 @@ export default function CheckoutPage() {
     return selectedMethod.price
   }
 
+  function getDiscountAmount() {
+    if (!appliedCoupon) return 0
+    if (appliedCoupon.discount_type === 'percentage') {
+      return total() * (appliedCoupon.discount_value / 100)
+    }
+    return appliedCoupon.discount_value
+  }
+
+  async function validateCoupon() {
+    if (!couponCode) return
+    setValidatingCoupon(true)
+
+    // Reset previous coupon
+    setAppliedCoupon(null)
+
+    const supabase = createClient()
+    const { data: coupons, error } = await supabase
+      .from('coupons')
+      .select('*')
+      .eq('tenant_id', tenant.id)
+      .eq('code', couponCode.toUpperCase())
+      .eq('is_active', true)
+      .single() // Expecting unique code per tenant
+
+    if (error || !coupons) {
+      toast.error('Cupom inválido ou não encontrado')
+      setValidatingCoupon(false)
+      return
+    }
+
+    // Validate rules
+    if (coupons.expiration_date && new Date(coupons.expiration_date) < new Date()) {
+      toast.error('Este cupom expirou')
+      setValidatingCoupon(false)
+      return
+    }
+
+    if (coupons.min_purchase_amount && total() < coupons.min_purchase_amount) {
+      toast.error(`Valor mínimo para este cupom é ${formatCurrency(coupons.min_purchase_amount)}`)
+      setValidatingCoupon(false)
+      return
+    }
+
+    if (coupons.max_usage_limit && coupons.usage_count >= coupons.max_usage_limit) {
+      toast.error('Limite de uso deste cupom excedido')
+      setValidatingCoupon(false)
+      return
+    }
+
+    setAppliedCoupon(coupons)
+    toast.success('Cupom aplicado com sucesso!')
+    setValidatingCoupon(false)
+  }
+
+  function removeCoupon() {
+    setAppliedCoupon(null)
+    setCouponCode('')
+    toast.info('Cupom removido')
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (items.length === 0) {
@@ -181,7 +246,8 @@ export default function CheckoutPage() {
     const customerNotes = formData.get('customer_notes') as string
 
     const shippingCost = getShippingCost()
-    const orderTotal = total() + shippingCost
+    const discountAmount = getDiscountAmount()
+    const orderTotal = Math.max(0, total() - discountAmount + shippingCost)
 
     const orderData = {
       tenant_id: tenant.id,
@@ -212,6 +278,8 @@ export default function CheckoutPage() {
       shipping_method: selectedMethod?.name || 'Retirada',
       shipping_zone_id: selectedMethod?.zone_id || null,
       shipping_method_id: selectedMethod?.id || null,
+      coupon_code: appliedCoupon ? appliedCoupon.code : null,
+      discount: discountAmount,
       customer_notes: customerNotes || null,
     }
 
@@ -226,6 +294,20 @@ export default function CheckoutPage() {
       toast.error('Erro ao criar pedido')
       setLoading(false)
       return
+    }
+
+    // Update coupon usage count
+    if (appliedCoupon) {
+      await supabase.rpc('increment_coupon_usage', { coupon_id: appliedCoupon.id })
+      // Fallback if RPC doesn't exist (though RPC is safer for concurrency)
+      // await supabase.from('coupons').update({ usage_count: appliedCoupon.usage_count + 1 }).eq('id', appliedCoupon.id)
+      // For now, let's just do a simple update implementation since RPC might not be set up
+      const { error: usageError } = await supabase
+        .from('coupons')
+        .update({ usage_count: appliedCoupon.usage_count + 1 })
+        .eq('id', appliedCoupon.id)
+
+      if (usageError) console.error('Error updating coupon usage', usageError)
     }
 
     const itemsList = items
@@ -243,7 +325,7 @@ export default function CheckoutPage() {
 ${itemsList}
 
 *Subtotal:* ${formatCurrency(total())}
-*Frete:* ${shippingCost > 0 ? formatCurrency(shippingCost) : 'Gratis'}
+${appliedCoupon ? `*Desconto (${appliedCoupon.code}):* -${formatCurrency(discountAmount)}\n` : ''}*Frete:* ${shippingCost > 0 ? formatCurrency(shippingCost) : 'Gratis'}
 *Total:* ${formatCurrency(orderTotal)}
 
 *Endereco:*
@@ -588,13 +670,46 @@ _Pedido via UP Catalogo_`
                       {formatCurrency(item.price * item.quantity)}
                     </p>
                   </div>
-                )
               })}
+
+              {/* Coupon Input */}
+              <div className="pt-4 border-t">
+                {!appliedCoupon ? (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Cupom de desconto"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    />
+                    <Button type="button" variant="outline" onClick={validateCoupon} disabled={!couponCode || validatingCoupon}>
+                      {validatingCoupon ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Aplicar'}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between bg-green-50 p-2 rounded border border-green-200 text-sm">
+                    <span className="text-green-700 font-medium flex items-center gap-1">
+                      <Tag className="h-3 w-3" /> {appliedCoupon.code} aplicado
+                    </span>
+                    <Button type="button" variant="ghost" size="sm" onClick={removeCoupon} className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50">
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+
               <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Subtotal</span>
                   <span>{formatCurrency(total())}</span>
                 </div>
+
+                {appliedCoupon && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Desconto</span>
+                    <span>- {formatCurrency(getDiscountAmount())}</span>
+                  </div>
+                )}
+
                 {selectedMethod && (
                   <div className="flex justify-between text-sm">
                     <span>Frete</span>
@@ -608,7 +723,7 @@ _Pedido via UP Catalogo_`
                 <div className="flex justify-between font-bold text-lg pt-2 border-t">
                   <span>Total</span>
                   <span>
-                    {formatCurrency(total() + getShippingCost())}
+                    {formatCurrency(Math.max(0, total() - getDiscountAmount() + getShippingCost()))}
                   </span>
                 </div>
               </div>
