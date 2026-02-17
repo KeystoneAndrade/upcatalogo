@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select } from '@/components/ui/select'
 import { Plus, Pencil, Trash2, Loader2, Tag, TicketPercent } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/utils'
@@ -216,13 +216,8 @@ export default function CouponsPage() {
                             <div className="space-y-2">
                                 <Label htmlFor="discount_type">Tipo de Desconto *</Label>
                                 <Select name="discount_type" defaultValue={editingCoupon?.discount_type || 'percentage'} required>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Selecione" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="percentage">Porcentagem (%)</SelectItem>
-                                        <SelectItem value="fixed">Valor Fixo (R$)</SelectItem>
-                                    </SelectContent>
+                                    <option value="percentage">Porcentagem (%)</option>
+                                    <option value="fixed">Valor Fixo (R$)</option>
                                 </Select>
                             </div>
                             <div className="space-y-2">
