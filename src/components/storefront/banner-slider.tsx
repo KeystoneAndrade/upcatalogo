@@ -19,20 +19,44 @@ interface BannerSliderProps {
 }
 
 export function BannerSlider({ banners }: BannerSliderProps) {
-  const { banners_per_view = 1 } = useTenantSettings()
+  const {
+    banners_per_view_desktop,
+    banners_per_view_mobile = 1,
+    banners_per_view = 1
+  } = useTenantSettings()
+
+  const desktopCount = banners_per_view_desktop || banners_per_view
+
   const [current, setCurrent] = useState(0)
   const [autoPlay, setAutoPlay] = useState(true)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  const currentCount = isMobile ? banners_per_view_mobile : desktopCount
 
   const chunks = useMemo(() => {
     if (!banners) return []
-    // No mobile sempre 1, no desktop respeita a config
-    // Mas aqui vamos simplificar para o slide comportar N items
     const result = []
-    for (let i = 0; i < banners.length; i += banners_per_view) {
-      result.push(banners.slice(i, i + banners_per_view))
+    for (let i = 0; i < banners.length; i += currentCount) {
+      result.push(banners.slice(i, i + currentCount))
     }
     return result
-  }, [banners, banners_per_view])
+  }, [banners, currentCount])
+
+  // Reset current slide if it becomes out of bounds after resize
+  useEffect(() => {
+    if (current >= chunks.length && chunks.length > 0) {
+      setCurrent(0)
+    }
+  }, [chunks.length, current])
 
   useEffect(() => {
     if (!autoPlay || chunks.length <= 1) return
@@ -68,9 +92,13 @@ export function BannerSlider({ banners }: BannerSliderProps) {
             className={`absolute inset-0 transition-opacity duration-500  ${idx === current ? 'opacity-100 z-0' : 'opacity-0 -z-10'
               }`}
           >
-            <div className={`grid h-full grid-cols-1 gap-2 p-2 ${banners_per_view === 2 ? 'md:grid-cols-2' :
-              banners_per_view === 3 ? 'md:grid-cols-3' :
-                banners_per_view === 4 ? 'md:grid-cols-4' : ''
+            <div className={`grid h-full gap-2 p-2 ${isMobile ? (
+                banners_per_view_mobile === 2 ? 'grid-cols-2' : 'grid-cols-1'
+              ) : (
+                desktopCount === 2 ? 'md:grid-cols-2' :
+                  desktopCount === 3 ? 'md:grid-cols-3' :
+                    desktopCount === 4 ? 'md:grid-cols-4' : 'md:grid-cols-1'
+              )
               }`}>
               {chunk.map((banner) => (
                 <div key={banner.id} className="relative h-full overflow-hidden rounded-md">

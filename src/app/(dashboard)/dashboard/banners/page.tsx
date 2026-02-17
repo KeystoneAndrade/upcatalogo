@@ -41,7 +41,8 @@ export default function BannersPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [tenant, setTenant] = useState<any>(null)
-  const [bannersPerView, setBannersPerView] = useState(1)
+  const [bannersPerViewDesktop, setBannersPerViewDesktop] = useState(1)
+  const [bannersPerViewMobile, setBannersPerViewMobile] = useState(1)
   const [savingSettings, setSavingSettings] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     title: '',
@@ -73,7 +74,8 @@ export default function BannersPage() {
 
     setTenant(tenant)
     const settings = (tenant?.settings as any) || {}
-    setBannersPerView(settings.banners_per_view || 1)
+    setBannersPerViewDesktop(settings.banners_per_view_desktop || settings.banners_per_view || 1)
+    setBannersPerViewMobile(settings.banners_per_view_mobile || 1)
 
     const { data } = await supabase
       .from('banners')
@@ -94,7 +96,9 @@ export default function BannersPage() {
       .update({
         settings: {
           ...currentSettings,
-          banners_per_view: bannersPerView,
+          banners_per_view_desktop: bannersPerViewDesktop,
+          banners_per_view_mobile: bannersPerViewMobile,
+          banners_per_view: bannersPerViewDesktop, // Compatibility
         }
       })
       .eq('id', tenant.id)
@@ -108,7 +112,9 @@ export default function BannersPage() {
         ...tenant,
         settings: {
           ...currentSettings,
-          banners_per_view: bannersPerView,
+          banners_per_view_desktop: bannersPerViewDesktop,
+          banners_per_view_mobile: bannersPerViewMobile,
+          banners_per_view: bannersPerViewDesktop,
         }
       })
     }
@@ -227,21 +233,33 @@ export default function BannersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Banners</h1>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-white p-1 px-3 rounded-md border text-sm">
-            <span className="text-muted-foreground whitespace-nowrap">Por slide (Desktop):</span>
-            <input
-              type="number"
-              min={1}
-              max={4}
-              value={bannersPerView}
-              onChange={(e) => setBannersPerView(Number(e.target.value))}
-              className="w-12 bg-transparent outline-none font-medium"
-            />
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+          <div className="flex items-center gap-4 bg-white p-2 px-3 rounded-md border text-sm shadow-sm">
+            <div className="flex items-center gap-2 pr-4 border-r">
+              <span className="text-muted-foreground whitespace-nowrap">Desktop:</span>
+              <input
+                type="number"
+                min={1}
+                max={4}
+                value={bannersPerViewDesktop}
+                onChange={(e) => setBannersPerViewDesktop(Number(e.target.value))}
+                className="w-10 bg-transparent outline-none font-medium text-center"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground whitespace-nowrap">Mobile:</span>
+              <input
+                type="number"
+                min={1}
+                max={2}
+                value={bannersPerViewMobile}
+                onChange={(e) => setBannersPerViewMobile(Number(e.target.value))}
+                className="w-10 bg-transparent outline-none font-medium text-center"
+              />
+            </div>
             <Button
               size="sm"
-              variant="ghost"
-              className="h-7 px-2"
+              className="h-8 ml-2"
               onClick={saveSettings}
               disabled={savingSettings}
             >
