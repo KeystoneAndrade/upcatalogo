@@ -116,7 +116,9 @@ export function MiniCart() {
                           onClick={() =>
                             updateQuantity(item.productId, item.quantity + 1, item.variant)
                           }
-                          className="h-6 w-6 rounded border flex items-center justify-center hover:bg-gray-50"
+                          disabled={item.manage_stock && item.stock_quantity !== undefined && item.quantity >= item.stock_quantity}
+                          className="h-6 w-6 rounded border flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={item.manage_stock && item.stock_quantity !== undefined && item.quantity >= item.stock_quantity ? 'Limite de estoque atingido' : ''}
                         >
                           <Plus className="h-3 w-3" />
                         </button>

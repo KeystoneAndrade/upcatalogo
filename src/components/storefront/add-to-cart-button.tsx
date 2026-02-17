@@ -17,6 +17,8 @@ export function AddToCartButton({ product }: { product: any }) {
       name: product.name,
       price: product.price,
       image: product.image_url,
+      stock_quantity: product.stock_quantity,
+      manage_stock: product.manage_stock,
     })
     toast.success('Adicionado ao carrinho!')
     if (settings.open_cart_on_add) {

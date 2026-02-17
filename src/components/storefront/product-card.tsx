@@ -18,6 +18,8 @@ interface ProductCardProps {
     compare_at_price: number | null
     image_url: string | null
     is_active: boolean
+    stock_quantity: number
+    manage_stock: boolean
     variants?: any
   }
 }
@@ -49,6 +51,8 @@ export function ProductCard({ product }: ProductCardProps) {
       name: product.name,
       price: product.price,
       image: product.image_url,
+      stock_quantity: product.stock_quantity,
+      manage_stock: product.manage_stock,
     })
     toast.success('Adicionado ao carrinho!')
     if (settings.open_cart_on_add) {

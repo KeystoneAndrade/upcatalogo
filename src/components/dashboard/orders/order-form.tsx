@@ -52,25 +52,33 @@ export function OrderForm({ tenantId, order, shippingZones, paymentMethods }: Or
     }, [items, shippingCost, discount])
 
     const handleAddItem = (product: any) => {
-        // If product has variants, just adding the base product for now to simplify
-        // In a real scenario, you'd open a modal to select variants
-        // For now, let's assume no variant or default
         const existingItem = items.find(i => i.product_id === product.id && !i.variant)
 
         if (existingItem) {
+            const newQty = existingItem.quantity + 1
+            if (product.manage_stock && newQty > product.stock_quantity) {
+                toast.error(`Estoque insuficiente: apenas ${product.stock_quantity} disponivéis.`)
+                return
+            }
             setItems(items.map(i =>
                 i.product_id === product.id && !i.variant
-                    ? { ...i, quantity: i.quantity + 1 }
+                    ? { ...i, quantity: newQty }
                     : i
             ))
         } else {
+            if (product.manage_stock && product.stock_quantity <= 0) {
+                toast.error('Produto sem estoque.')
+                return
+            }
             setItems([...items, {
                 product_id: product.id,
                 name: product.name,
                 quantity: 1,
                 price: product.price,
                 image_url: product.image_url,
-                variant: null // Simplified for now
+                variant: null,
+                manage_stock: product.manage_stock,
+                stock_quantity: product.stock_quantity
             }])
         }
         toast.success('Produto adicionado')
@@ -78,6 +86,13 @@ export function OrderForm({ tenantId, order, shippingZones, paymentMethods }: Or
 
     const handleUpdateQuantity = (productId: string, variant: string | null, newQty: number) => {
         if (newQty < 1) return
+
+        const item = items.find(i => i.product_id === productId && i.variant === variant)
+        if (item && item.manage_stock && newQty > item.stock_quantity) {
+            toast.error(`Limite de estoque atingido (${item.stock_quantity}).`)
+            return
+        }
+
         setItems(items.map(i =>
             i.product_id === productId && i.variant === variant
                 ? { ...i, quantity: newQty }

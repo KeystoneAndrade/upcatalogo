@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { toast } from 'sonner'
 
 export interface CartItem {
   productId: string
@@ -8,6 +9,8 @@ export interface CartItem {
   quantity: number
   image: string | null
   variant?: string
+  stock_quantity?: number
+  manage_stock?: boolean
 }
 
 interface CartStore {
@@ -30,26 +33,39 @@ export const useCartStore = create<CartStore>()(
       isOpen: false,
 
       addItem: (item) => {
-        set((state) => {
-          const key = item.variant ? `${item.productId}-${item.variant}` : item.productId
-          const existing = state.items.find(
-            (i) => (i.variant ? `${i.productId}-${i.variant}` : i.productId) === key
-          )
+        const state = get()
+        const key = item.variant ? `${item.productId}-${item.variant}` : item.productId
+        const existing = state.items.find(
+          (i) => (i.variant ? `${i.productId}-${i.variant}` : i.productId) === key
+        )
 
-          if (existing) {
-            return {
-              items: state.items.map((i) =>
-                (i.variant ? `${i.productId}-${i.variant}` : i.productId) === key
-                  ? { ...i, quantity: i.quantity + 1 }
-                  : i
-              ),
+        if (existing) {
+          const newQuantity = existing.quantity + 1
+
+          if (item.manage_stock && item.stock_quantity !== undefined) {
+            if (newQuantity > item.stock_quantity) {
+              toast.error(`Desculpe, temos apenas ${item.stock_quantity} unidades em estoque.`)
+              return
             }
           }
 
-          return {
-            items: [...state.items, { ...item, quantity: 1 }],
+          set({
+            items: state.items.map((i) =>
+              (i.variant ? `${i.productId}-${i.variant}` : i.productId) === key
+                ? { ...i, quantity: newQuantity }
+                : i
+            ),
+          })
+        } else {
+          if (item.manage_stock && item.stock_quantity !== undefined && item.stock_quantity <= 0) {
+            toast.error('Produto esgotado.')
+            return
           }
-        })
+
+          set({
+            items: [...state.items, { ...item, quantity: 1 }],
+          })
+        }
       },
 
       removeItem: (productId, variant) => {
@@ -67,9 +83,20 @@ export const useCartStore = create<CartStore>()(
           get().removeItem(productId, variant)
           return
         }
+
+        const state = get()
+        const key = variant ? `${productId}-${variant}` : productId
+        const item = state.items.find((i) => (i.variant ? `${i.productId}-${i.variant}` : i.productId) === key)
+
+        if (item && item.manage_stock && item.stock_quantity !== undefined) {
+          if (quantity > item.stock_quantity) {
+            toast.error(`Apenas ${item.stock_quantity} disponivéis no estoque.`)
+            return
+          }
+        }
+
         set((state) => ({
           items: state.items.map((i) => {
-            const key = variant ? `${productId}-${variant}` : productId
             const itemKey = i.variant ? `${i.productId}-${i.variant}` : i.productId
             return itemKey === key ? { ...i, quantity } : i
           }),

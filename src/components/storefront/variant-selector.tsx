@@ -124,6 +124,8 @@ export function VariantSelector({ product }: VariantSelectorProps) {
       price: selectedVariant.price,
       image: selectedVariant.image_url || product.image_url,
       variant: variantLabel,
+      stock_quantity: selectedVariant.stock_quantity,
+      manage_stock: selectedVariant.manage_stock,
     })
     toast.success('Adicionado ao carrinho!')
     if (settings.open_cart_on_add) {
