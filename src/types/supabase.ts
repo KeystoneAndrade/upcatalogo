@@ -27,6 +27,7 @@ export interface Database {
           plan: 'free' | 'basic' | 'pro' | 'enterprise'
           meta_title: string | null
           meta_description: string | null
+          settings: Json
           created_at: string
           updated_at: string
         }
@@ -47,6 +48,7 @@ export interface Database {
           plan?: 'free' | 'basic' | 'pro' | 'enterprise'
           meta_title?: string | null
           meta_description?: string | null
+          settings?: Json
           created_at?: string
           updated_at?: string
         }
@@ -67,6 +69,7 @@ export interface Database {
           plan?: 'free' | 'basic' | 'pro' | 'enterprise'
           meta_title?: string | null
           meta_description?: string | null
+          settings?: Json
           created_at?: string
           updated_at?: string
         }

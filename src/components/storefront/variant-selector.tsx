@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useCartStore } from '@/store/cart-store'
+import { useTenantSettings } from '@/components/storefront/tenant-settings-provider'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 import { ShoppingCart } from 'lucide-react'
@@ -53,6 +54,8 @@ function parseVariants(variants: any): VariantsData | null {
 
 export function VariantSelector({ product }: VariantSelectorProps) {
   const addItem = useCartStore((s) => s.addItem)
+  const openMiniCart = useCartStore((s) => s.openMiniCart)
+  const settings = useTenantSettings()
   const variantsData = parseVariants(product.variants)
 
   const [selected, setSelected] = useState<Record<string, string>>({})
@@ -122,7 +125,11 @@ export function VariantSelector({ product }: VariantSelectorProps) {
       image: selectedVariant.image_url || product.image_url,
       variant: variantLabel,
     })
-    toast.success('Adicionado ao carrinho!')
+    if (settings.open_cart_on_add) {
+      openMiniCart()
+    } else {
+      toast.success('Adicionado ao carrinho!')
+    }
   }
 
   // Produto sem variacoes - nao renderizar nada (usa o AddToCartButton padrao)

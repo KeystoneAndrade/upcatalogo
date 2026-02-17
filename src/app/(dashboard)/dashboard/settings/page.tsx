@@ -15,6 +15,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [tenant, setTenant] = useState<any>(null)
+  const [openCartOnAdd, setOpenCartOnAdd] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -29,6 +30,8 @@ export default function SettingsPage() {
       .eq('owner_id', session!.user.id)
       .single()
     setTenant(data)
+    const settings = (data?.settings as any) || {}
+    setOpenCartOnAdd(!!settings.open_cart_on_add)
     setLoading(false)
   }
 
@@ -36,6 +39,8 @@ export default function SettingsPage() {
     e.preventDefault()
     setSaving(true)
     const formData = new FormData(e.currentTarget)
+
+    const currentSettings = (tenant?.settings as any) || {}
 
     const { error } = await supabase
       .from('tenants')
@@ -49,6 +54,10 @@ export default function SettingsPage() {
         logo_url: formData.get('logo_url') as string || null,
         meta_title: formData.get('meta_title') as string || null,
         meta_description: formData.get('meta_description') as string || null,
+        settings: {
+          ...currentSettings,
+          open_cart_on_add: openCartOnAdd,
+        },
       })
       .eq('id', tenant.id)
 
@@ -96,6 +105,35 @@ export default function SettingsPage() {
               <Label htmlFor="instagram">Instagram (sem @)</Label>
               <Input id="instagram" name="instagram" placeholder="minhaloja" defaultValue={tenant?.instagram} />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Carrinho</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <label className="flex items-center justify-between cursor-pointer">
+              <div>
+                <p className="font-medium text-sm">Abrir mini cart ao adicionar produto</p>
+                <p className="text-xs text-muted-foreground">
+                  Abre o carrinho lateral automaticamente quando um produto e adicionado
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={openCartOnAdd}
+                onClick={() => setOpenCartOnAdd(!openCartOnAdd)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 ${
+                  openCartOnAdd ? 'bg-black' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    openCartOnAdd ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </label>
           </CardContent>
         </Card>
 

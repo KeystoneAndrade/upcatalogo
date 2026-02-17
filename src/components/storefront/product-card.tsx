@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { formatCurrency, calculateDiscount } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { useCartStore } from '@/store/cart-store'
+import { useTenantSettings } from '@/components/storefront/tenant-settings-provider'
 import { Button } from '@/components/ui/button'
 import { ShoppingCart } from 'lucide-react'
 import { toast } from 'sonner'
@@ -29,6 +30,8 @@ function productHasVariants(variants: any): boolean {
 
 export function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((s) => s.addItem)
+  const openMiniCart = useCartStore((s) => s.openMiniCart)
+  const settings = useTenantSettings()
   const hasVariants = productHasVariants(product.variants)
   const discount = product.compare_at_price
     ? calculateDiscount(product.compare_at_price, product.price)
@@ -47,7 +50,11 @@ export function ProductCard({ product }: ProductCardProps) {
       price: product.price,
       image: product.image_url,
     })
-    toast.success('Adicionado ao carrinho!')
+    if (settings.open_cart_on_add) {
+      openMiniCart()
+    } else {
+      toast.success('Adicionado ao carrinho!')
+    }
   }
 
   return (

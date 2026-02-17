@@ -24,6 +24,7 @@ CREATE TABLE tenants (
   plan VARCHAR(20) DEFAULT 'free' CHECK (plan IN ('free', 'basic', 'pro', 'enterprise')),
   meta_title VARCHAR(255),
   meta_description TEXT,
+  settings JSONB DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   CONSTRAINT subdomain_format CHECK (subdomain ~* '^[a-z0-9-]+$'),

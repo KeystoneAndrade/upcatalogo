@@ -12,10 +12,13 @@ export interface CartItem {
 
 interface CartStore {
   items: CartItem[]
+  isOpen: boolean
   addItem: (item: Omit<CartItem, 'quantity'>) => void
   removeItem: (productId: string, variant?: string) => void
   updateQuantity: (productId: string, quantity: number, variant?: string) => void
   clearCart: () => void
+  openMiniCart: () => void
+  closeMiniCart: () => void
   total: () => number
   itemCount: () => number
 }
@@ -24,6 +27,7 @@ export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
+      isOpen: false,
 
       addItem: (item) => {
         set((state) => {
@@ -72,12 +76,17 @@ export const useCartStore = create<CartStore>()(
 
       clearCart: () => set({ items: [] }),
 
+      openMiniCart: () => set({ isOpen: true }),
+
+      closeMiniCart: () => set({ isOpen: false }),
+
       total: () => get().items.reduce((sum, item) => sum + item.price * item.quantity, 0),
 
       itemCount: () => get().items.reduce((sum, item) => sum + item.quantity, 0),
     }),
     {
       name: 'cart-storage',
+      partialize: (state) => ({ items: state.items }),
     }
   )
 )
