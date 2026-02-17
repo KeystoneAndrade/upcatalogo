@@ -201,7 +201,6 @@ export interface Database {
           tenant_id: string
           name: string
           description: string | null
-          cities: string[]
           neighborhoods: string[] | null
           zipcodes: string[] | null
           cep_start: string | null
@@ -220,7 +219,7 @@ export interface Database {
           tenant_id: string
           name: string
           description?: string | null
-          cities?: string[]
+
           neighborhoods?: string[] | null
           zipcodes?: string[] | null
           cep_start?: string | null
@@ -239,7 +238,7 @@ export interface Database {
           tenant_id?: string
           name?: string
           description?: string | null
-          cities?: string[]
+
           neighborhoods?: string[] | null
           zipcodes?: string[] | null
           cep_start?: string | null

@@ -123,7 +123,6 @@ export default function ShippingPage() {
       tenant_id: tenantId,
       name: zoneName,
       price: 0,
-      cities: [],
       is_active: true,
     }
 
