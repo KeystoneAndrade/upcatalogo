@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Loader2, Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Plus, Pencil, Trash2, Eye, EyeOff, Monitor, Smartphone, Save } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Banner {
@@ -233,41 +233,61 @@ export default function BannersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Banners</h1>
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-          <div className="flex items-center gap-4 bg-white p-2 px-3 rounded-md border text-sm shadow-sm">
-            <div className="flex items-center gap-2 pr-4 border-r">
-              <span className="text-muted-foreground whitespace-nowrap">Desktop:</span>
-              <input
-                type="number"
-                min={1}
-                max={4}
-                value={bannersPerViewDesktop}
-                onChange={(e) => setBannersPerViewDesktop(Number(e.target.value))}
-                className="w-10 bg-transparent outline-none font-medium text-center"
-              />
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
+          <div className="flex items-center gap-1 bg-white p-1 rounded-lg border shadow-sm">
+            <div className="flex items-center gap-2 px-3 py-1.5 border-r border-gray-100">
+              <Monitor className="h-4 w-4 text-gray-400" />
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase font-bold text-gray-400 leading-none mb-1">Desktop</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={4}
+                    value={bannersPerViewDesktop}
+                    onChange={(e) => setBannersPerViewDesktop(Number(e.target.value))}
+                    className="w-8 bg-transparent outline-none font-semibold text-sm h-5"
+                  />
+                  <span className="text-gray-300 text-xs text-[10px]">banners</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground whitespace-nowrap">Mobile:</span>
-              <input
-                type="number"
-                min={1}
-                max={2}
-                value={bannersPerViewMobile}
-                onChange={(e) => setBannersPerViewMobile(Number(e.target.value))}
-                className="w-10 bg-transparent outline-none font-medium text-center"
-              />
+
+            <div className="flex items-center gap-2 px-3 py-1.5 mr-1">
+              <Smartphone className="h-4 w-4 text-gray-400" />
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase font-bold text-gray-400 leading-none mb-1">Mobile</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={2}
+                    value={bannersPerViewMobile}
+                    onChange={(e) => setBannersPerViewMobile(Number(e.target.value))}
+                    className="w-8 bg-transparent outline-none font-semibold text-sm h-5"
+                  />
+                  <span className="text-gray-300 text-xs text-[10px]">banners</span>
+                </div>
+              </div>
             </div>
+
             <Button
               size="sm"
-              className="h-8 ml-2"
+              className="h-9 px-4 rounded-md shadow-sm"
               onClick={saveSettings}
               disabled={savingSettings}
             >
-              {savingSettings ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Salvar'}
+              {savingSettings ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Salvar
+                </>
+              )}
             </Button>
           </div>
-          <Button onClick={() => { resetForm(); setDialogOpen(true) }}>
-            <Plus className="mr-2 h-4 w-4" />
+
+          <Button onClick={() => { resetForm(); setDialogOpen(true) }} className="h-11 md:h-11">
+            <Plus className="mr-2 h-5 w-5" />
             Novo Banner
           </Button>
         </div>
