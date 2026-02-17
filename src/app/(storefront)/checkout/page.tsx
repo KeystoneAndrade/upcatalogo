@@ -41,9 +41,9 @@ export default function CheckoutPage() {
   const [tenant, setTenant] = useState<any>(null)
   const [paymentMethods, setPaymentMethods] = useState<any[]>([])
   const [allShippingZones, setAllShippingZones] = useState<any[]>([])
-  const [matchedZones, setMatchedZones] = useState<any[]>([])
+  const [matchedMethods, setMatchedMethods] = useState<any[]>([])
   const [selectedPayment, setSelectedPayment] = useState('')
-  const [selectedShipping, setSelectedShipping] = useState<any>(null)
+  const [selectedMethod, setSelectedMethod] = useState<any>(null)
   const [mounted, setMounted] = useState(false)
   const [cep, setCep] = useState('')
   const [cepSearched, setCepSearched] = useState(false)
@@ -92,7 +92,7 @@ export default function CheckoutPage() {
         .order('display_order'),
       supabase
         .from('shipping_zones')
-        .select('*')
+        .select('*, shipping_zone_ranges(*), shipping_methods(*)')
         .eq('tenant_id', tenantData.id)
         .eq('is_active', true)
         .order('display_order'),
@@ -110,33 +110,45 @@ export default function CheckoutPage() {
     }
 
     setSearchingCep(true)
-    setSelectedShipping(null)
+    setSelectedMethod(null)
 
     // Buscar zonas que cobrem este CEP
-    const matched = allShippingZones.filter((zone) => {
-      if (zone.cep_start && zone.cep_end) {
-        return cepNorm >= zone.cep_start && cepNorm <= zone.cep_end
+    const methods: any[] = []
+
+    allShippingZones.forEach(zone => {
+      const hasMatch = zone.shipping_zone_ranges?.some((range: any) => {
+        return cepNorm >= range.cep_start && cepNorm <= range.cep_end
+      })
+
+      if (hasMatch) {
+        zone.shipping_methods?.forEach((method: any) => {
+          if (method.is_active) {
+            methods.push({
+              ...method,
+              zone_name: zone.name
+            })
+          }
+        })
       }
-      return false
     })
 
-    setMatchedZones(matched)
+    setMatchedMethods(methods)
     setCepSearched(true)
     setSearchingCep(false)
 
-    if (matched.length === 1) {
-      setSelectedShipping(matched[0])
+    if (methods.length === 1) {
+      setSelectedMethod(methods[0])
     }
   }
 
   function getShippingCost() {
-    if (!selectedShipping) return 0
+    if (!selectedMethod) return 0
     if (
-      selectedShipping.free_shipping_threshold &&
-      total() >= selectedShipping.free_shipping_threshold
+      selectedMethod.free_shipping_threshold &&
+      total() >= selectedMethod.free_shipping_threshold
     )
       return 0
-    return selectedShipping.price
+    return selectedMethod.price
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -149,7 +161,7 @@ export default function CheckoutPage() {
       toast.error('Loja sem WhatsApp configurado')
       return
     }
-    if (allShippingZones.length > 0 && !selectedShipping) {
+    if (allShippingZones.length > 0 && !selectedMethod) {
       toast.error('Selecione uma opcao de entrega')
       return
     }
@@ -197,8 +209,9 @@ export default function CheckoutPage() {
         variant: item.variant || null,
       })),
       payment_method: selectedPayment || 'Nao informado',
-      shipping_method: selectedShipping?.name || 'Retirada',
-      shipping_zone_id: selectedShipping?.id || null,
+      shipping_method: selectedMethod?.name || 'Retirada',
+      shipping_zone_id: selectedMethod?.zone_id || null,
+      shipping_method_id: selectedMethod?.id || null,
       customer_notes: customerNotes || null,
     }
 
@@ -239,7 +252,7 @@ ${neighborhood} - ${city}/${state}
 ${zipcode ? 'CEP: ' + zipcode : ''}
 
 *Pagamento:* ${selectedPayment || 'Nao informado'}
-*Entrega:* ${selectedShipping?.name || 'Retirada'}
+*Entrega:* ${selectedMethod?.name || 'Retirada'}
 
 ${customerNotes ? '*Obs:* ' + customerNotes : ''}
 
@@ -344,59 +357,58 @@ _Pedido via UP Catalogo_`
                   </div>
 
                   {/* Resultado da busca de frete */}
-                  {cepSearched && matchedZones.length === 0 && (
+                  {cepSearched && matchedMethods.length === 0 && (
                     <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
                       <AlertCircle className="h-4 w-4 flex-shrink-0" />
                       <p>Nao entregamos neste CEP. Entre em contato para mais informacoes.</p>
                     </div>
                   )}
 
-                  {matchedZones.length > 0 && (
+                  {matchedMethods.length > 0 && (
                     <div className="space-y-2 mt-2">
-                      {matchedZones.map((sz) => (
+                      {matchedMethods.map((sm) => (
                         <label
-                          key={sz.id}
-                          className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
-                            selectedShipping?.id === sz.id
+                          key={sm.id}
+                          className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${selectedMethod?.id === sm.id
                               ? 'border-green-500 bg-green-50'
                               : 'hover:bg-gray-50'
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center space-x-3">
                             <input
                               type="radio"
                               name="shipping"
-                              checked={selectedShipping?.id === sz.id}
-                              onChange={() => setSelectedShipping(sz)}
+                              checked={selectedMethod?.id === sm.id}
+                              onChange={() => setSelectedMethod(sm)}
                               className="text-green-600"
                             />
                             <div>
-                              <p className="font-medium text-sm">{sz.name}</p>
-                              {sz.delivery_time_min && sz.delivery_time_max && (
+                              <p className="font-medium text-sm">{sm.name}</p>
+                              {sm.delivery_time_min && sm.delivery_time_max && (
                                 <p className="text-xs text-muted-foreground">
-                                  {sz.delivery_time_min}-{sz.delivery_time_max} dias uteis
+                                  {sm.delivery_time_min}-{sm.delivery_time_max} dias uteis
                                 </p>
                               )}
                             </div>
                           </div>
                           <span className="font-semibold text-sm">
-                            {sz.free_shipping_threshold &&
-                            total() >= sz.free_shipping_threshold
+                            {sm.free_shipping_threshold &&
+                              total() >= sm.free_shipping_threshold
                               ? 'Gratis'
-                              : formatCurrency(sz.price)}
+                              : formatCurrency(sm.price)}
                           </span>
                         </label>
                       ))}
                     </div>
                   )}
 
-                  {selectedShipping && (
+                  {selectedMethod && (
                     <div className="flex items-center gap-2 text-green-600 text-sm">
                       <CheckCircle2 className="h-4 w-4" />
                       <span>
                         Frete: {getShippingCost() > 0 ? formatCurrency(getShippingCost()) : 'Gratis'}
-                        {selectedShipping.delivery_time_min && selectedShipping.delivery_time_max &&
-                          ` | ${selectedShipping.delivery_time_min}-${selectedShipping.delivery_time_max} dias uteis`}
+                        {selectedMethod.delivery_time_min && selectedMethod.delivery_time_max &&
+                          ` | ${selectedMethod.delivery_time_min}-${selectedMethod.delivery_time_max} dias uteis`}
                       </span>
                     </div>
                   )}
@@ -583,7 +595,7 @@ _Pedido via UP Catalogo_`
                   <span>Subtotal</span>
                   <span>{formatCurrency(total())}</span>
                 </div>
-                {selectedShipping && (
+                {selectedMethod && (
                   <div className="flex justify-between text-sm">
                     <span>Frete</span>
                     <span>

@@ -310,6 +310,7 @@ export interface Database {
           payment_method_type: string | null
           shipping_method: string
           shipping_zone_id: string | null
+          shipping_method_id: string | null
           status: 'pending' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled'
           customer_notes: string | null
           internal_notes: string | null
@@ -338,6 +339,7 @@ export interface Database {
           payment_method_type?: string | null
           shipping_method: string
           shipping_zone_id?: string | null
+          shipping_method_id?: string | null
           status?: 'pending' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled'
           customer_notes?: string | null
           internal_notes?: string | null
@@ -366,6 +368,7 @@ export interface Database {
           payment_method_type?: string | null
           shipping_method?: string
           shipping_zone_id?: string | null
+          shipping_method_id?: string | null
           status?: 'pending' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled'
           customer_notes?: string | null
           internal_notes?: string | null
@@ -410,6 +413,70 @@ export interface Database {
           description?: string | null
           image_url?: string
           link_url?: string | null
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      shipping_zone_ranges: {
+        Row: {
+          id: string
+          zone_id: string
+          cep_start: string
+          cep_end: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          zone_id: string
+          cep_start: string
+          cep_end: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          zone_id?: string
+          cep_start?: string
+          cep_end?: string
+          created_at?: string
+        }
+      }
+      shipping_methods: {
+        Row: {
+          id: string
+          zone_id: string
+          name: string
+          price: number
+          free_shipping_threshold: number | null
+          delivery_time_min: number | null
+          delivery_time_max: number | null
+          is_active: boolean
+          display_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          zone_id: string
+          name: string
+          price: number
+          free_shipping_threshold?: number | null
+          delivery_time_min?: number | null
+          delivery_time_max?: number | null
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          zone_id?: string
+          name?: string
+          price?: number
+          free_shipping_threshold?: number | null
+          delivery_time_min?: number | null
+          delivery_time_max?: number | null
           is_active?: boolean
           display_order?: number
           created_at?: string
