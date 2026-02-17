@@ -59,7 +59,7 @@ export function BannerSlider({ banners }: BannerSliderProps) {
   const activeBanner = banners[current]
 
   return (
-    <div className="relative w-full bg-gray-900 overflow-hidden rounded-lg">
+    <div className="relative w-full overflow-hidden rounded-lg">
       {/* Banner content */}
       <div className="relative aspect-[21/9] md:aspect-video">
         {chunks.map((chunk, idx) => (
@@ -69,8 +69,8 @@ export function BannerSlider({ banners }: BannerSliderProps) {
               }`}
           >
             <div className={`grid h-full grid-cols-1 gap-2 p-2 ${banners_per_view === 2 ? 'md:grid-cols-2' :
-                banners_per_view === 3 ? 'md:grid-cols-3' :
-                  banners_per_view === 4 ? 'md:grid-cols-4' : ''
+              banners_per_view === 3 ? 'md:grid-cols-3' :
+                banners_per_view === 4 ? 'md:grid-cols-4' : ''
               }`}>
               {chunk.map((banner) => (
                 <div key={banner.id} className="relative h-full overflow-hidden rounded-md">
