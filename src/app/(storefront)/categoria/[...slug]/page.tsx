@@ -34,15 +34,13 @@ export default async function CategoryPage({ params }: { params: { slug: string[
   const children = getDirectChildren(allCategories, currentCategory.id)
     .filter((c) => c.is_active)
 
-  // Buscar produtos desta categoria E de todas as descendentes (sempre)
-  const categoryIds = [currentCategory.id, ...getAllDescendantIds(allCategories, currentCategory.id)]
-
+  // Buscar produtos APENAS desta categoria específica (não das descendentes)
   const { data: products } = await supabase
     .from('products')
     .select('*')
     .eq('tenant_id', tenant.id)
     .eq('is_active', true)
-    .in('category_id', categoryIds)
+    .eq('category_id', currentCategory.id)
     .order('display_order')
 
   return (
