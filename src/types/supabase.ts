@@ -372,6 +372,44 @@ export interface Database {
           cancelled_at?: string | null
         }
       }
+      banners: {
+        Row: {
+          id: string
+          tenant_id: string
+          title: string
+          description: string | null
+          image_url: string
+          link_url: string | null
+          is_active: boolean
+          display_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          title: string
+          description?: string | null
+          image_url: string
+          link_url?: string | null
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          title?: string
+          description?: string | null
+          image_url?: string
+          link_url?: string | null
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

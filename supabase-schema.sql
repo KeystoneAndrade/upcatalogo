@@ -178,6 +178,23 @@ CREATE INDEX idx_orders_status ON orders(tenant_id, status);
 CREATE INDEX idx_orders_customer_phone ON orders(tenant_id, customer_phone);
 CREATE INDEX idx_orders_created ON orders(tenant_id, created_at DESC);
 
+-- TABELA: banners
+CREATE TABLE banners (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  image_url TEXT NOT NULL,
+  link_url TEXT,
+  is_active BOOLEAN DEFAULT true,
+  display_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_banners_tenant ON banners(tenant_id);
+CREATE INDEX idx_banners_active ON banners(tenant_id, is_active);
+
 -- FUNCOES AUXILIARES
 
 CREATE OR REPLACE FUNCTION generate_order_number()
@@ -231,6 +248,8 @@ CREATE TRIGGER update_payment_methods_updated_at BEFORE UPDATE ON payment_method
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_banners_updated_at BEFORE UPDATE ON banners
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ROW LEVEL SECURITY
 ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
@@ -239,6 +258,7 @@ ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE shipping_zones ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payment_methods ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE banners ENABLE ROW LEVEL SECURITY;
 
 -- POLITICAS: tenants
 CREATE POLICY "Lojistas podem ver sua loja" ON tenants FOR SELECT USING (owner_id = auth.uid());
@@ -272,3 +292,8 @@ CREATE POLICY "Lojistas podem ver pedidos" ON orders FOR SELECT
 CREATE POLICY "Lojistas podem atualizar pedidos" ON orders FOR UPDATE
   USING (tenant_id IN (SELECT id FROM tenants WHERE owner_id = auth.uid()));
 CREATE POLICY "Clientes podem criar pedidos" ON orders FOR INSERT WITH CHECK (true);
+
+-- POLITICAS: banners
+CREATE POLICY "Lojistas podem gerenciar banners" ON banners FOR ALL
+  USING (tenant_id IN (SELECT id FROM tenants WHERE owner_id = auth.uid()));
+CREATE POLICY "Publico pode ver banners ativos" ON banners FOR SELECT USING (is_active = true);

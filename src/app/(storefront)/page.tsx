@@ -1,14 +1,14 @@
 import Link from 'next/link'
 import { ArrowRight, Store, Smartphone, Zap } from 'lucide-react'
 import { getTenant } from '@/lib/get-tenant'
-import { ProductsList } from '@/components/storefront/products-list'
+import { StorefrontHome } from '@/components/storefront/home'
 
 export default async function HomePage() {
   const tenant = await getTenant()
 
-  // If tenant found, show storefront
+  // If tenant found, show storefront with banners and products
   if (tenant) {
-    return <ProductsList />
+    return <StorefrontHome tenantId={tenant.id} />
   }
 
   // Otherwise show landing page
