@@ -529,6 +529,41 @@ export interface Database {
           updated_at?: string
         }
       }
+      order_history: {
+        Row: {
+          id: string
+          tenant_id: string
+          order_id: string
+          user_id: string | null
+          type: string
+          description: string
+          metadata: Json
+          is_customer_visible: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          order_id: string
+          user_id?: string | null
+          type: string
+          description: string
+          metadata?: Json
+          is_customer_visible?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          order_id?: string
+          user_id?: string | null
+          type?: string
+          description?: string
+          metadata?: Json
+          is_customer_visible?: boolean
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
