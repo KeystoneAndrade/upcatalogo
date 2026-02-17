@@ -239,16 +239,16 @@ export default function BannersPage() {
               <Monitor className="h-4 w-4 text-gray-400" />
               <div className="flex flex-col">
                 <span className="text-[10px] uppercase font-bold text-gray-400 leading-none mb-1">Desktop</span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 mt-0.5">
                   <input
                     type="number"
                     min={1}
                     max={4}
                     value={bannersPerViewDesktop}
                     onChange={(e) => setBannersPerViewDesktop(Number(e.target.value))}
-                    className="w-8 bg-transparent outline-none font-semibold text-sm h-5"
+                    className="w-10 h-7 bg-gray-50 border border-gray-200 rounded text-center font-bold text-gray-900 focus:ring-1 focus:ring-primary outline-none transition-all"
                   />
-                  <span className="text-gray-300 text-xs text-[10px]">banners</span>
+                  <span className="text-gray-400 text-[10px] font-medium">unid.</span>
                 </div>
               </div>
             </div>
@@ -257,16 +257,16 @@ export default function BannersPage() {
               <Smartphone className="h-4 w-4 text-gray-400" />
               <div className="flex flex-col">
                 <span className="text-[10px] uppercase font-bold text-gray-400 leading-none mb-1">Mobile</span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 mt-0.5">
                   <input
                     type="number"
                     min={1}
                     max={2}
                     value={bannersPerViewMobile}
                     onChange={(e) => setBannersPerViewMobile(Number(e.target.value))}
-                    className="w-8 bg-transparent outline-none font-semibold text-sm h-5"
+                    className="w-10 h-7 bg-gray-50 border border-gray-200 rounded text-center font-bold text-gray-900 focus:ring-1 focus:ring-primary outline-none transition-all"
                   />
-                  <span className="text-gray-300 text-xs text-[10px]">banners</span>
+                  <span className="text-gray-400 text-[10px] font-medium">unid.</span>
                 </div>
               </div>
             </div>
