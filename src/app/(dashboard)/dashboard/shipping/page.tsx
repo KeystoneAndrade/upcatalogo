@@ -123,6 +123,7 @@ export default function ShippingPage() {
       tenant_id: tenantId,
       name: zoneName,
       price: 0,
+      cities: [],
       is_active: true,
     }
 
@@ -379,7 +380,7 @@ export default function ShippingPage() {
               <Button type="button" variant="outline" size="sm" onClick={addCepRange} className="mt-1">
                 <Plus className="mr-1 h-3 w-3" /> Adicionar faixa
               </Button>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground text-left">
                 Deixe o CEP final vazio para faixa de CEP unico
               </p>
             </div>
