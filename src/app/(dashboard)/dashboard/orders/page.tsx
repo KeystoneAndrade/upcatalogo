@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import { Eye } from 'lucide-react'
+import { Eye, Plus } from 'lucide-react'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 
 const statusLabels: Record<string, string> = {
@@ -42,7 +42,14 @@ export default async function OrdersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Pedidos</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Pedidos</h1>
+        <Link href="/dashboard/orders/new">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" /> Novo Pedido
+          </Button>
+        </Link>
+      </div>
 
       <Card>
         <CardContent className="p-0">

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { logOrderHistory } from '@/lib/order-logger'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -18,7 +19,7 @@ const statuses = [
   { value: 'cancelled', label: 'Cancelado' },
 ]
 
-export function OrderStatusUpdate({ orderId, currentStatus }: { orderId: string; currentStatus: string }) {
+export function OrderStatusUpdate({ orderId, currentStatus, tenantId }: { orderId: string; currentStatus: string; tenantId: string }) {
   const router = useRouter()
   const [status, setStatus] = useState(currentStatus)
   const [loading, setLoading] = useState(false)
@@ -26,6 +27,7 @@ export function OrderStatusUpdate({ orderId, currentStatus }: { orderId: string;
   async function handleUpdate() {
     setLoading(true)
     const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
 
     const updateData: any = { status }
     if (status === 'confirmed') updateData.confirmed_at = new Date().toISOString()
@@ -38,6 +40,14 @@ export function OrderStatusUpdate({ orderId, currentStatus }: { orderId: string;
     if (error) {
       toast.error('Erro ao atualizar status')
     } else {
+      await logOrderHistory(
+        tenantId,
+        orderId,
+        'status_change',
+        `Status alterado de ${currentStatus} para ${status}`,
+        session?.user.id,
+        { old_status: currentStatus, new_status: status }
+      )
       toast.success('Status atualizado!')
       router.refresh()
     }
