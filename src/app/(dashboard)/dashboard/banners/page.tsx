@@ -62,7 +62,7 @@ export default function BannersPage() {
     const { data: { session } } = await supabase.auth.getSession()
     const { data: tenant } = await supabase
       .from('tenants')
-      .select('id')
+      .select('id, settings')
       .eq('owner_id', session!.user.id)
       .single()
 
@@ -150,7 +150,7 @@ export default function BannersPage() {
     const { data: { session } } = await supabase.auth.getSession()
     const { data: tenant } = await supabase
       .from('tenants')
-      .select('id')
+      .select('id, settings')
       .eq('owner_id', session!.user.id)
       .single()
 
