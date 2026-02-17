@@ -12,6 +12,7 @@ import {
   CreditCard,
   Tag,
   Store,
+  Image as ImageIcon,
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -27,6 +28,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Produtos', href: '/dashboard/products', icon: Package },
   { name: 'Categorias', href: '/dashboard/categories', icon: Tag },
+  { name: 'Banners', href: '/dashboard/banners', icon: ImageIcon },
   { name: 'Pedidos', href: '/dashboard/orders', icon: ShoppingCart },
   { name: 'Entrega', href: '/dashboard/shipping', icon: Truck },
   { name: 'Pagamentos', href: '/dashboard/payments', icon: CreditCard },
