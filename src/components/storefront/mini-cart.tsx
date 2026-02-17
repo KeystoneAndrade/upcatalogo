@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useCartStore } from '@/store/cart-store'
 import { formatCurrency } from '@/lib/utils'
@@ -8,7 +8,12 @@ import { Button } from '@/components/ui/button'
 import { X, Minus, Plus, Trash2, ShoppingCart } from 'lucide-react'
 
 export function MiniCart() {
+  const [mounted, setMounted] = useState(false)
   const { items, isOpen, closeMiniCart, removeItem, updateQuantity, total, itemCount } = useCartStore()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Fechar com ESC
   useEffect(() => {
@@ -25,7 +30,7 @@ export function MiniCart() {
     }
   }, [isOpen, closeMiniCart])
 
-  if (!isOpen) return null
+  if (!mounted || !isOpen) return null
 
   return (
     <div className="fixed inset-0 z-50">
