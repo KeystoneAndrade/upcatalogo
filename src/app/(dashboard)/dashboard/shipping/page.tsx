@@ -6,11 +6,20 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, MapPin } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/utils'
+
+function formatCep(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 8)
+  if (digits.length <= 5) return digits
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`
+}
+
+function normalizeCep(cep: string) {
+  return cep.replace(/\D/g, '').padEnd(8, '0')
+}
 
 export default function ShippingPage() {
   const [zones, setZones] = useState<any[]>([])
@@ -19,6 +28,8 @@ export default function ShippingPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<any>(null)
   const [tenantId, setTenantId] = useState('')
+  const [cepStart, setCepStart] = useState('')
+  const [cepEnd, setCepEnd] = useState('')
   const supabase = createClient()
 
   useEffect(() => { loadData() }, [])
@@ -32,15 +43,46 @@ export default function ShippingPage() {
     setLoading(false)
   }
 
+  function openNew() {
+    setEditing(null)
+    setCepStart('')
+    setCepEnd('')
+    setDialogOpen(true)
+  }
+
+  function openEdit(zone: any) {
+    setEditing(zone)
+    setCepStart(zone.cep_start ? formatCep(zone.cep_start) : '')
+    setCepEnd(zone.cep_end ? formatCep(zone.cep_end) : '')
+    setDialogOpen(true)
+  }
+
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setSaving(true)
     const formData = new FormData(e.currentTarget)
-    const citiesStr = formData.get('cities') as string
-    const data = {
+
+    const cepStartNorm = normalizeCep(cepStart)
+    const cepEndNorm = cepEnd ? normalizeCep(cepEnd) : cepStartNorm
+
+    if (cepStartNorm.length !== 8) {
+      toast.error('CEP inicial invalido')
+      setSaving(false)
+      return
+    }
+
+    if (cepEndNorm < cepStartNorm) {
+      toast.error('CEP final deve ser maior ou igual ao CEP inicial')
+      setSaving(false)
+      return
+    }
+
+    const data: any = {
       tenant_id: tenantId,
       name: formData.get('name') as string,
-      cities: citiesStr.split(',').map(c => c.trim()).filter(Boolean),
+      cep_start: cepStartNorm,
+      cep_end: cepEndNorm,
+      cities: [],
       price: parseFloat(formData.get('price') as string),
       free_shipping_threshold: formData.get('free_shipping_threshold') ? parseFloat(formData.get('free_shipping_threshold') as string) : null,
       delivery_time_min: formData.get('delivery_time_min') ? parseInt(formData.get('delivery_time_min') as string) : null,
@@ -50,20 +92,24 @@ export default function ShippingPage() {
 
     if (editing) {
       const { error } = await supabase.from('shipping_zones').update(data).eq('id', editing.id)
-      if (error) { toast.error('Erro'); setSaving(false); return }
-      toast.success('Atualizado!')
+      if (error) { toast.error('Erro ao atualizar'); setSaving(false); return }
+      toast.success('Zona atualizada!')
     } else {
       const { error } = await supabase.from('shipping_zones').insert(data)
       if (error) { toast.error('Erro: ' + error.message); setSaving(false); return }
-      toast.success('Criado!')
+      toast.success('Zona criada!')
     }
-    setDialogOpen(false); setEditing(null); setSaving(false); loadData()
+    setDialogOpen(false)
+    setEditing(null)
+    setSaving(false)
+    loadData()
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Excluir zona?')) return
+    if (!confirm('Excluir zona de entrega?')) return
     await supabase.from('shipping_zones').delete().eq('id', id)
-    toast.success('Excluido!'); loadData()
+    toast.success('Excluido!')
+    loadData()
   }
 
   if (loading) return <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
@@ -72,14 +118,19 @@ export default function ShippingPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Zonas de Entrega</h1>
-        <Button onClick={() => { setEditing(null); setDialogOpen(true) }}>
+        <Button onClick={openNew}>
           <Plus className="mr-2 h-4 w-4" /> Nova Zona
         </Button>
       </div>
+
       <Card>
         <CardContent className="p-0">
           {zones.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">Nenhuma zona cadastrada</div>
+            <div className="p-8 text-center text-muted-foreground">
+              <MapPin className="h-10 w-10 mx-auto mb-3 text-gray-300" />
+              <p>Nenhuma zona cadastrada</p>
+              <p className="text-xs mt-1">Cadastre zonas com faixas de CEP para calcular o frete automaticamente</p>
+            </div>
           ) : (
             <div className="divide-y">
               {zones.map((z) => (
@@ -87,7 +138,15 @@ export default function ShippingPage() {
                   <div>
                     <p className="font-medium">{z.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      Cidades: {z.cities?.join(', ')} | Frete: {formatCurrency(z.price)}
+                      {z.cep_start && z.cep_end ? (
+                        <>
+                          CEP: {formatCep(z.cep_start)}
+                          {z.cep_end !== z.cep_start && ` ate ${formatCep(z.cep_end)}`}
+                        </>
+                      ) : z.cities?.length > 0 ? (
+                        <>Cidades: {z.cities.join(', ')}</>
+                      ) : null}
+                      {' | '}Frete: {formatCurrency(z.price)}
                       {z.delivery_time_min && z.delivery_time_max && ` | ${z.delivery_time_min}-${z.delivery_time_max} dias`}
                     </p>
                     {z.free_shipping_threshold && (
@@ -95,8 +154,12 @@ export default function ShippingPage() {
                     )}
                   </div>
                   <div className="flex space-x-2">
-                    <Button variant="ghost" size="icon" onClick={() => { setEditing(z); setDialogOpen(true) }}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(z.id)}><Trash2 className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(z)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(z.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -107,19 +170,45 @@ export default function ShippingPage() {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent onClose={() => setDialogOpen(false)}>
-          <DialogHeader><DialogTitle>{editing ? 'Editar' : 'Nova'} Zona de Entrega</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{editing ? 'Editar' : 'Nova'} Zona de Entrega</DialogTitle>
+          </DialogHeader>
           <form onSubmit={handleSave} className="space-y-4 mt-4">
             <div className="space-y-2">
-              <Label htmlFor="sz-name">Nome</Label>
-              <Input id="sz-name" name="name" required defaultValue={editing?.name} placeholder="Ex: Centro" />
+              <Label htmlFor="sz-name">Nome da zona *</Label>
+              <Input id="sz-name" name="name" required defaultValue={editing?.name} placeholder="Ex: Regiao Centro, Capital SP" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="sz-cities">Cidades (separadas por virgula)</Label>
-              <Input id="sz-cities" name="cities" required defaultValue={editing?.cities?.join(', ')} placeholder="Sao Paulo, Guarulhos" />
-            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="sz-price">Preco do frete (R$)</Label>
+                <Label htmlFor="sz-cep-start">CEP Inicial *</Label>
+                <Input
+                  id="sz-cep-start"
+                  value={cepStart}
+                  onChange={(e) => setCepStart(formatCep(e.target.value))}
+                  placeholder="01000-000"
+                  required
+                  maxLength={9}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sz-cep-end">CEP Final</Label>
+                <Input
+                  id="sz-cep-end"
+                  value={cepEnd}
+                  onChange={(e) => setCepEnd(formatCep(e.target.value))}
+                  placeholder="01999-999"
+                  maxLength={9}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Deixe vazio para CEP unico
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="sz-price">Preco do frete (R$) *</Label>
                 <Input id="sz-price" name="price" type="number" step="0.01" min="0" required defaultValue={editing?.price} />
               </div>
               <div className="space-y-2">

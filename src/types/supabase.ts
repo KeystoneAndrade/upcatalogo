@@ -204,6 +204,8 @@ export interface Database {
           cities: string[]
           neighborhoods: string[] | null
           zipcodes: string[] | null
+          cep_start: string | null
+          cep_end: string | null
           price: number
           free_shipping_threshold: number | null
           delivery_time_min: number | null
@@ -218,9 +220,11 @@ export interface Database {
           tenant_id: string
           name: string
           description?: string | null
-          cities: string[]
+          cities?: string[]
           neighborhoods?: string[] | null
           zipcodes?: string[] | null
+          cep_start?: string | null
+          cep_end?: string | null
           price: number
           free_shipping_threshold?: number | null
           delivery_time_min?: number | null
@@ -238,6 +242,8 @@ export interface Database {
           cities?: string[]
           neighborhoods?: string[] | null
           zipcodes?: string[] | null
+          cep_start?: string | null
+          cep_end?: string | null
           price?: number
           free_shipping_threshold?: number | null
           delivery_time_min?: number | null

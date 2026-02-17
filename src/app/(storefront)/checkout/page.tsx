@@ -17,8 +17,22 @@ import {
   Minus,
   ShoppingCart,
   MessageCircle,
+  MapPin,
+  Search,
+  AlertCircle,
+  CheckCircle2,
 } from 'lucide-react'
 import { toast } from 'sonner'
+
+function formatCepInput(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 8)
+  if (digits.length <= 5) return digits
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`
+}
+
+function normalizeCep(cep: string) {
+  return cep.replace(/\D/g, '')
+}
 
 export default function CheckoutPage() {
   const router = useRouter()
@@ -26,10 +40,14 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
   const [tenant, setTenant] = useState<any>(null)
   const [paymentMethods, setPaymentMethods] = useState<any[]>([])
-  const [shippingZones, setShippingZones] = useState<any[]>([])
+  const [allShippingZones, setAllShippingZones] = useState<any[]>([])
+  const [matchedZones, setMatchedZones] = useState<any[]>([])
   const [selectedPayment, setSelectedPayment] = useState('')
   const [selectedShipping, setSelectedShipping] = useState<any>(null)
   const [mounted, setMounted] = useState(false)
+  const [cep, setCep] = useState('')
+  const [cepSearched, setCepSearched] = useState(false)
+  const [searchingCep, setSearchingCep] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -81,7 +99,34 @@ export default function CheckoutPage() {
     ])
 
     setPaymentMethods(pmRes.data || [])
-    setShippingZones(szRes.data || [])
+    setAllShippingZones(szRes.data || [])
+  }
+
+  function searchCep() {
+    const cepNorm = normalizeCep(cep)
+    if (cepNorm.length !== 8) {
+      toast.error('Digite um CEP valido com 8 digitos')
+      return
+    }
+
+    setSearchingCep(true)
+    setSelectedShipping(null)
+
+    // Buscar zonas que cobrem este CEP
+    const matched = allShippingZones.filter((zone) => {
+      if (zone.cep_start && zone.cep_end) {
+        return cepNorm >= zone.cep_start && cepNorm <= zone.cep_end
+      }
+      return false
+    })
+
+    setMatchedZones(matched)
+    setCepSearched(true)
+    setSearchingCep(false)
+
+    if (matched.length === 1) {
+      setSelectedShipping(matched[0])
+    }
   }
 
   function getShippingCost() {
@@ -104,6 +149,10 @@ export default function CheckoutPage() {
       toast.error('Loja sem WhatsApp configurado')
       return
     }
+    if (allShippingZones.length > 0 && !selectedShipping) {
+      toast.error('Selecione uma opcao de entrega')
+      return
+    }
     setLoading(true)
 
     const formData = new FormData(e.currentTarget)
@@ -116,7 +165,7 @@ export default function CheckoutPage() {
     const neighborhood = formData.get('neighborhood') as string
     const city = formData.get('city') as string
     const state = formData.get('state') as string
-    const zipcode = formData.get('zipcode') as string
+    const zipcode = cep
     const customerNotes = formData.get('customer_notes') as string
 
     const shippingCost = getShippingCost()
@@ -261,6 +310,98 @@ _Pedido via UP Catalogo_`
                 <CardTitle>Endereco de Entrega</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* CEP com busca de frete */}
+                <div className="space-y-2">
+                  <Label htmlFor="zipcode">CEP *</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="zipcode"
+                      value={cep}
+                      onChange={(e) => {
+                        setCep(formatCepInput(e.target.value))
+                        setCepSearched(false)
+                        setSelectedShipping(null)
+                        setMatchedZones([])
+                      }}
+                      placeholder="00000-000"
+                      required
+                      maxLength={9}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={searchCep}
+                      disabled={searchingCep || normalizeCep(cep).length !== 8}
+                    >
+                      {searchingCep ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Search className="h-4 w-4" />
+                      )}
+                      <span className="ml-2">Calcular frete</span>
+                    </Button>
+                  </div>
+
+                  {/* Resultado da busca de frete */}
+                  {cepSearched && matchedZones.length === 0 && (
+                    <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+                      <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                      <p>Nao entregamos neste CEP. Entre em contato para mais informacoes.</p>
+                    </div>
+                  )}
+
+                  {matchedZones.length > 0 && (
+                    <div className="space-y-2 mt-2">
+                      {matchedZones.map((sz) => (
+                        <label
+                          key={sz.id}
+                          className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
+                            selectedShipping?.id === sz.id
+                              ? 'border-green-500 bg-green-50'
+                              : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <input
+                              type="radio"
+                              name="shipping"
+                              checked={selectedShipping?.id === sz.id}
+                              onChange={() => setSelectedShipping(sz)}
+                              className="text-green-600"
+                            />
+                            <div>
+                              <p className="font-medium text-sm">{sz.name}</p>
+                              {sz.delivery_time_min && sz.delivery_time_max && (
+                                <p className="text-xs text-muted-foreground">
+                                  {sz.delivery_time_min}-{sz.delivery_time_max} dias uteis
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <span className="font-semibold text-sm">
+                            {sz.free_shipping_threshold &&
+                            total() >= sz.free_shipping_threshold
+                              ? 'Gratis'
+                              : formatCurrency(sz.price)}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+
+                  {selectedShipping && (
+                    <div className="flex items-center gap-2 text-green-600 text-sm">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>
+                        Frete: {getShippingCost() > 0 ? formatCurrency(getShippingCost()) : 'Gratis'}
+                        {selectedShipping.delivery_time_min && selectedShipping.delivery_time_max &&
+                          ` | ${selectedShipping.delivery_time_min}-${selectedShipping.delivery_time_max} dias uteis`}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-3 gap-4">
                   <div className="col-span-2 space-y-2">
                     <Label htmlFor="street">Rua *</Label>
@@ -281,7 +422,7 @@ _Pedido via UP Catalogo_`
                     <Input id="neighborhood" name="neighborhood" required />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="city">Cidade *</Label>
                     <Input id="city" name="city" required />
@@ -295,10 +436,6 @@ _Pedido via UP Catalogo_`
                       placeholder="SP"
                       maxLength={2}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="zipcode">CEP</Label>
-                    <Input id="zipcode" name="zipcode" />
                   </div>
                 </div>
               </CardContent>
@@ -332,49 +469,6 @@ _Pedido via UP Catalogo_`
                             </p>
                           )}
                         </div>
-                      </label>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {shippingZones.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Forma de Entrega</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {shippingZones.map((sz) => (
-                      <label
-                        key={sz.id}
-                        className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <input
-                            type="radio"
-                            name="shipping"
-                            checked={selectedShipping?.id === sz.id}
-                            onChange={() => setSelectedShipping(sz)}
-                            className="text-blue-600"
-                          />
-                          <div>
-                            <p className="font-medium">{sz.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {sz.cities?.join(', ')}
-                              {sz.delivery_time_min &&
-                                sz.delivery_time_max &&
-                                ` | ${sz.delivery_time_min}-${sz.delivery_time_max} dias`}
-                            </p>
-                          </div>
-                        </div>
-                        <span className="font-medium">
-                          {sz.free_shipping_threshold &&
-                          total() >= sz.free_shipping_threshold
-                            ? 'Gratis'
-                            : formatCurrency(sz.price)}
-                        </span>
                       </label>
                     ))}
                   </div>
