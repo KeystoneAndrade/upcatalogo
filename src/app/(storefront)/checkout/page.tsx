@@ -333,8 +333,8 @@ _Pedido via UP Catalogo_`
                       onChange={(e) => {
                         setCep(formatCepInput(e.target.value))
                         setCepSearched(false)
-                        setSelectedShipping(null)
-                        setMatchedZones([])
+                        setSelectedMethod(null)
+                        setMatchedMethods([])
                       }}
                       placeholder="00000-000"
                       required
@@ -370,8 +370,8 @@ _Pedido via UP Catalogo_`
                         <label
                           key={sm.id}
                           className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${selectedMethod?.id === sm.id
-                              ? 'border-green-500 bg-green-50'
-                              : 'hover:bg-gray-50'
+                            ? 'border-green-500 bg-green-50'
+                            : 'hover:bg-gray-50'
                             }`}
                         >
                           <div className="flex items-center space-x-3">
