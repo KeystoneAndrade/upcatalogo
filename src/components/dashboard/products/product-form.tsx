@@ -46,6 +46,10 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
     existingVariants || { attributes: [], items: [] }
   )
 
+  // Para produtos variaveis, manage_stock eh controlado por um toggle global no VariantManager
+  const existingManageStockVariants = existingVariants?.items?.some(i => i.manage_stock) ?? false
+  const [manageStockVariants, setManageStockVariants] = useState(existingManageStockVariants)
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
@@ -53,34 +57,53 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
     const formData = new FormData(e.currentTarget)
     const name = formData.get('name') as string
     const description = formData.get('description') as string
-    const price = parseFloat(formData.get('price') as string)
-    const compareAtPrice = formData.get('compare_at_price') as string
+    const imageUrl = formData.get('image_url') as string
     const categoryId = formData.get('category_id') as string
-    const sku = formData.get('sku') as string
-    const stockQuantity = parseInt(formData.get('stock_quantity') as string) || 0
-    const manageStock = formData.get('manage_stock') === 'on'
     const isActive = formData.get('is_active') === 'on'
     const featured = formData.get('featured') === 'on'
-    const imageUrl = formData.get('image_url') as string
 
-    // Se tem variacoes, ajustar preco para o menor das variacoes
-    let finalPrice = price
+    let finalPrice: number
+    let finalCompareAtPrice: number | null = null
+    let finalSku: string | null = null
+    let finalStockQuantity = 0
+    let finalManageStock = false
     let variants: any = []
+    let finalWeight: number | null = null
+    let finalHeight: number | null = null
+    let finalWidth: number | null = null
+    let finalLength: number | null = null
 
     if (hasVariants && variantsData.items.length > 0) {
+      // Produto variavel: preco = menor das variacoes ativas
       variants = variantsData
       const activeItems = variantsData.items.filter(i => i.is_active)
-      if (activeItems.length > 0) {
-        finalPrice = Math.min(...activeItems.map(i => i.price))
-      }
-    }
+      finalPrice = activeItems.length > 0
+        ? Math.min(...activeItems.map(i => i.price))
+        : parseFloat(formData.get('price') as string) || 0
+      // manage_stock do produto fica true se gerencia por variacao
+      finalManageStock = manageStockVariants
+      // stock = soma das variacoes
+      finalStockQuantity = manageStockVariants
+        ? variantsData.items.reduce((sum, i) => sum + (i.is_active ? i.stock_quantity : 0), 0)
+        : 0
+    } else {
+      // Produto simples
+      finalPrice = parseFloat(formData.get('price') as string) || 0
+      const compareAtPrice = formData.get('compare_at_price') as string
+      finalCompareAtPrice = compareAtPrice ? parseFloat(compareAtPrice) : null
+      finalSku = (formData.get('sku') as string) || null
+      finalStockQuantity = parseInt(formData.get('stock_quantity') as string) || 0
+      finalManageStock = formData.get('manage_stock') === 'on'
 
-    // Dimensoes de envio: somente para produtos simples (sem variacoes)
-    // Para produtos com variacoes, as dimensoes ficam em cada variacao
-    const weightVal = !hasVariants ? formData.get('weight') as string : null
-    const heightVal = !hasVariants ? formData.get('height') as string : null
-    const widthVal = !hasVariants ? formData.get('width') as string : null
-    const lengthVal = !hasVariants ? formData.get('length') as string : null
+      const weightVal = formData.get('weight') as string
+      const heightVal = formData.get('height') as string
+      const widthVal = formData.get('width') as string
+      const lengthVal = formData.get('length') as string
+      finalWeight = weightVal ? parseFloat(weightVal) : null
+      finalHeight = heightVal ? parseFloat(heightVal) : null
+      finalWidth = widthVal ? parseFloat(widthVal) : null
+      finalLength = lengthVal ? parseFloat(lengthVal) : null
+    }
 
     const data = {
       tenant_id: tenantId,
@@ -88,19 +111,19 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
       slug: slugify(name),
       description: description || null,
       price: finalPrice,
-      compare_at_price: compareAtPrice ? parseFloat(compareAtPrice) : null,
+      compare_at_price: finalCompareAtPrice,
       category_id: categoryId || null,
-      sku: sku || null,
-      stock_quantity: stockQuantity,
-      manage_stock: manageStock,
+      sku: finalSku,
+      stock_quantity: finalStockQuantity,
+      manage_stock: finalManageStock,
       is_active: isActive,
       featured,
       image_url: imageUrl || null,
       variants,
-      weight: weightVal ? parseFloat(weightVal) : null,
-      height: heightVal ? parseFloat(heightVal) : null,
-      width: widthVal ? parseFloat(widthVal) : null,
-      length: lengthVal ? parseFloat(lengthVal) : null,
+      weight: finalWeight,
+      height: finalHeight,
+      width: finalWidth,
+      length: finalLength,
     }
 
     const supabase = createClient()
@@ -147,6 +170,7 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Informacoes Basicas */}
       <Card>
         <CardHeader>
           <CardTitle>Informacoes Basicas</CardTitle>
@@ -167,58 +191,7 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Preco e Estoque</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="price">
-                {hasVariants ? 'Preco base (R$)' : 'Preco (R$) *'}
-              </Label>
-              <Input id="price" name="price" type="number" step="0.01" min="0" required defaultValue={product?.price} />
-              {hasVariants && (
-                <p className="text-xs text-muted-foreground">
-                  O preco exibido sera o menor entre as variacoes ativas
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="compare_at_price">Preco "De" (R$)</Label>
-              <Input id="compare_at_price" name="compare_at_price" type="number" step="0.01" min="0" defaultValue={product?.compare_at_price} />
-            </div>
-          </div>
-          {!hasVariants && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="sku">SKU</Label>
-                <Input id="sku" name="sku" defaultValue={product?.sku} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="stock_quantity">Quantidade em estoque</Label>
-                <Input id="stock_quantity" name="stock_quantity" type="number" min="0" defaultValue={product?.stock_quantity || 0} />
-              </div>
-            </div>
-          )}
-          {!hasVariants && (
-            <div className="flex items-center space-x-6">
-              <label className="flex items-center space-x-2">
-                <input type="checkbox" name="manage_stock" defaultChecked={product?.manage_stock} className="rounded border-gray-300" />
-                <span className="text-sm">Gerenciar estoque</span>
-              </label>
-            </div>
-          )}
-          {hasVariants && (
-            <>
-              <input type="hidden" name="sku" value="" />
-              <input type="hidden" name="stock_quantity" value="0" />
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Variacoes */}
+      {/* Variacoes — aparece logo apos informacoes basicas */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -231,6 +204,7 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
                   setHasVariants(e.target.checked)
                   if (!e.target.checked) {
                     setVariantsData({ attributes: [], items: [] })
+                    setManageStockVariants(false)
                   }
                 }}
                 className="rounded border-gray-300"
@@ -238,6 +212,11 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
               <span className="text-sm">Este produto tem variacoes</span>
             </label>
           </div>
+          {hasVariants && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Configure as variacoes com preco, estoque, SKU e dimensoes de envio individuais
+            </p>
+          )}
         </CardHeader>
         {hasVariants && (
           <CardContent>
@@ -245,11 +224,51 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
               value={variantsData}
               onChange={setVariantsData}
               basePrice={product?.price || 0}
+              manageStockGlobal={manageStockVariants}
+              onManageStockChange={setManageStockVariants}
             />
           </CardContent>
         )}
       </Card>
 
+      {/* Preco e Estoque — somente para produtos simples */}
+      {!hasVariants && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Preco e Estoque</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="price">Preco (R$) *</Label>
+                <Input id="price" name="price" type="number" step="0.01" min="0" required defaultValue={product?.price} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="compare_at_price">Preco &quot;De&quot; (R$)</Label>
+                <Input id="compare_at_price" name="compare_at_price" type="number" step="0.01" min="0" defaultValue={product?.compare_at_price} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="sku">SKU</Label>
+                <Input id="sku" name="sku" defaultValue={product?.sku} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="stock_quantity">Quantidade em estoque</Label>
+                <Input id="stock_quantity" name="stock_quantity" type="number" min="0" defaultValue={product?.stock_quantity || 0} />
+              </div>
+            </div>
+            <div className="flex items-center space-x-6">
+              <label className="flex items-center space-x-2">
+                <input type="checkbox" name="manage_stock" defaultChecked={product?.manage_stock} className="rounded border-gray-300" />
+                <span className="text-sm">Gerenciar estoque</span>
+              </label>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Envio — somente para produtos simples */}
       {!hasVariants && (
         <Card>
           <CardHeader>
@@ -284,6 +303,16 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
         </Card>
       )}
 
+      {/* Hidden inputs para produto variavel (para o form data nao ficar vazio) */}
+      {hasVariants && (
+        <>
+          <input type="hidden" name="price" value={product?.price || 0} />
+          <input type="hidden" name="sku" value="" />
+          <input type="hidden" name="stock_quantity" value="0" />
+        </>
+      )}
+
+      {/* Organizacao */}
       <Card>
         <CardHeader>
           <CardTitle>Organizacao</CardTitle>
