@@ -128,7 +128,7 @@ export default function CheckoutPage() {
 
       if (hasMatch) {
         zone.shipping_methods?.forEach((method: any) => {
-          if (method.is_active) {
+          if (method.is_active && !method.name.startsWith('__')) {
             manualMethods.push({
               ...method,
               zone_name: zone.name
@@ -142,7 +142,26 @@ export default function CheckoutPage() {
     let meMethods: any[] = []
     const settings = (tenant?.settings as any) || {}
 
-    if (settings.melhor_envio_enabled && tenant?.id) {
+    // Detect ME service IDs from matched zones
+    const meServiceIds: number[] = []
+    allShippingZones.forEach(zone => {
+      const hasMatch = zone.shipping_zone_ranges?.some((range: any) => {
+        return cepNorm >= range.cep_start && cepNorm <= range.cep_end
+      })
+      if (hasMatch) {
+        zone.shipping_methods?.forEach((method: any) => {
+          if (method.is_active && method.name.startsWith('__me_service_')) {
+            const match = method.name.match(/^__me_service_(\d+)__$/)
+            if (match) meServiceIds.push(parseInt(match[1]))
+          }
+        })
+      }
+    })
+
+    const hasMeInZones = meServiceIds.length > 0
+    const shouldUseMelhorEnvio = (settings.melhor_envio_enabled || hasMeInZones) && settings.melhor_envio_token && tenant?.id
+
+    if (shouldUseMelhorEnvio) {
       try {
         const supabase = createClient()
         const productIds = items.map(i => i.productId).filter(Boolean)
@@ -177,6 +196,7 @@ export default function CheckoutPage() {
             tenant_id: tenant.id,
             to_postal_code: cepNorm,
             products: meProducts,
+            service_ids: hasMeInZones ? meServiceIds : undefined,
           }),
         })
 
@@ -199,6 +219,7 @@ export default function CheckoutPage() {
         }
       } catch (err) {
         console.error('Erro ao consultar Melhor Envio:', err)
+        toast.error('Erro ao calcular frete via Melhor Envio. Tente novamente.')
       }
     }
 
@@ -517,7 +538,7 @@ _Pedido via UP Catalogo_`
                   {cepSearched && matchedMethods.length === 0 && (
                     <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
                       <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                      <p>Nao entregamos neste CEP. Entre em contato para mais informacoes.</p>
+                      <p>Nenhuma opcao de frete disponivel para este CEP. Entre em contato para mais informacoes.</p>
                     </div>
                   )}
 

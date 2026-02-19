@@ -34,7 +34,6 @@ export default function IntegrationsPage() {
   const [meEnabled, setMeEnabled] = useState(false)
   const [meSandbox, setMeSandbox] = useState(true)
   const [meToken, setMeToken] = useState('')
-  const [meCepOrigem, setMeCepOrigem] = useState('')
   const [meDefaultWeight, setMeDefaultWeight] = useState('0.3')
   const [meDefaultHeight, setMeDefaultHeight] = useState('11')
   const [meDefaultWidth, setMeDefaultWidth] = useState('11')
@@ -65,7 +64,6 @@ export default function IntegrationsPage() {
     setMeEnabled(!!settings.melhor_envio_enabled)
     setMeSandbox(settings.melhor_envio_sandbox !== false)
     setMeToken(settings.melhor_envio_token || '')
-    setMeCepOrigem(settings.melhor_envio_cep_origem || '')
     setMeDefaultWeight(String(settings.melhor_envio_default_weight || '0.3'))
     setMeDefaultHeight(String(settings.melhor_envio_default_height || '11'))
     setMeDefaultWidth(String(settings.melhor_envio_default_width || '11'))
@@ -110,6 +108,10 @@ export default function IntegrationsPage() {
     setSaving(true)
     const currentSettings = (tenant?.settings as any) || {}
 
+    // Derive CEP de origem from selected address
+    const selectedAddr = meAddresses.find(a => a.id === meSelectedAddressId)
+    const cepOrigem = selectedAddr?.postal_code?.replace(/\D/g, '') || currentSettings.melhor_envio_cep_origem || ''
+
     const { error } = await supabase
       .from('tenants')
       .update({
@@ -118,7 +120,7 @@ export default function IntegrationsPage() {
           melhor_envio_enabled: meEnabled,
           melhor_envio_sandbox: meSandbox,
           melhor_envio_token: meToken,
-          melhor_envio_cep_origem: meCepOrigem.replace(/\D/g, ''),
+          melhor_envio_cep_origem: cepOrigem,
           melhor_envio_default_weight: parseFloat(meDefaultWeight) || 0.3,
           melhor_envio_default_height: parseFloat(meDefaultHeight) || 11,
           melhor_envio_default_width: parseFloat(meDefaultWidth) || 11,
@@ -224,18 +226,6 @@ export default function IntegrationsPage() {
                   {meSandbox ? 'sandbox.melhorenvio.com.br' : 'melhorenvio.com.br'}
                 </a>
               </p>
-            </div>
-
-            {/* CEP origem */}
-            <div className="space-y-2">
-              <Label htmlFor="me_cep_origem">CEP de origem *</Label>
-              <Input
-                id="me_cep_origem"
-                value={meCepOrigem}
-                onChange={(e) => setMeCepOrigem(formatCepField(e.target.value))}
-                placeholder="00000-000"
-                maxLength={9}
-              />
             </div>
 
             {/* Endereco de origem - seletor do Melhor Envio */}

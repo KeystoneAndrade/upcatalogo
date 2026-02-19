@@ -10,6 +10,7 @@ export interface MelhorEnvioConfig {
   default_width?: number
   default_length?: number
   address_id?: string  // ID do endereco selecionado no Melhor Envio
+  services?: number[]  // IDs dos servicos habilitados (vazio = todos)
 }
 
 export interface MelhorEnvioAddress {
@@ -106,7 +107,14 @@ export async function calculateShipping(
 
   // Filter out services with errors
   if (Array.isArray(data)) {
-    return data.filter((service: any) => !service.error)
+    let valid = data.filter((service: any) => !service.error)
+
+    // Filter by allowed service IDs if specified
+    if (config.services && config.services.length > 0) {
+      valid = valid.filter((s: any) => config.services!.includes(s.id))
+    }
+
+    return valid
   }
 
   return []
@@ -231,6 +239,21 @@ export async function getAddressById(config: MelhorEnvioConfig, addressId: strin
   }
 }
 
+// Get available shipping services
+export async function getAvailableServices(config: MelhorEnvioConfig) {
+  const data = await meRequest(config, '/api/v2/me/shipment/services', { method: 'GET' })
+  if (Array.isArray(data)) {
+    return data.map((s: any) => ({
+      id: s.id,
+      name: s.name || '',
+      type: s.type || '',
+      company_name: s.company?.name || '',
+      company_picture: s.company?.picture || '',
+    }))
+  }
+  return []
+}
+
 // Cancel a shipment
 export async function cancelShipment(
   config: MelhorEnvioConfig,
@@ -264,5 +287,6 @@ export function extractMeConfig(settings: any): MelhorEnvioConfig | null {
     default_width: settings.melhor_envio_default_width || 11,
     default_length: settings.melhor_envio_default_length || 11,
     address_id: settings.melhor_envio_address_id || undefined,
+    services: Array.isArray(settings.melhor_envio_services) ? settings.melhor_envio_services : undefined,
   }
 }

@@ -5,7 +5,7 @@ import { calculateShipping, extractMeConfig, type ProductDimensions } from '@/li
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { tenant_id, to_postal_code, products } = body
+    const { tenant_id, to_postal_code, products, service_ids } = body
 
     if (!tenant_id || !to_postal_code || !products?.length) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -40,6 +40,11 @@ export async function POST(request: Request) {
       quantity: p.quantity || 1,
       price: p.price || 0,
     }))
+
+    // If specific service_ids were requested, override config
+    if (Array.isArray(service_ids) && service_ids.length > 0) {
+      meConfig.services = service_ids
+    }
 
     const services = await calculateShipping(
       meConfig,

@@ -28,7 +28,16 @@ const INTEGRATION_METHODS = [
 const ALL_PREDEFINED = [...MANUAL_METHODS]
 
 function isIntegrationMethod(name: string) {
-  return INTEGRATION_METHODS.some(m => m.value === name)
+  return INTEGRATION_METHODS.some(m => m.value === name) || isMeServiceMethod(name)
+}
+
+function isMeServiceMethod(name: string) {
+  return name.startsWith('__me_service_')
+}
+
+function parseMeServiceId(name: string): number | null {
+  const match = name.match(/^__me_service_(\d+)__$/)
+  return match ? parseInt(match[1]) : null
 }
 
 function formatCep(value: string) {
@@ -67,6 +76,12 @@ export default function ShippingPage() {
   const [selectedMethodName, setSelectedMethodName] = useState('')
   const [customMethodName, setCustomMethodName] = useState('')
 
+  // ME services state
+  const [meServices, setMeServices] = useState<any[]>([])
+  const [loadingMeServices, setLoadingMeServices] = useState(false)
+  const [selectedMeServiceIds, setSelectedMeServiceIds] = useState<number[]>([])
+  const [meServiceNames, setMeServiceNames] = useState<Record<number, string>>({})
+
   useEffect(() => { loadData() }, [])
 
   async function loadData() {
@@ -81,6 +96,18 @@ export default function ShippingPage() {
       .order('display_order')
 
     setZones(data || [])
+
+    // Load ME service names from existing methods for display
+    const serviceNames: Record<number, string> = {}
+      ; (data || []).forEach((zone: any) => {
+        ; (zone.shipping_methods || []).forEach((m: any) => {
+          if (isMeServiceMethod(m.name)) {
+            // name is stored as __me_service_<id>__, but we also store display name
+            // We'll have a mapping loaded from ME API or fallback
+          }
+        })
+      })
+
     setLoading(false)
   }
 
@@ -191,17 +218,23 @@ export default function ShippingPage() {
     setCurrentZoneId(zoneId)
     setSelectedMethodName('')
     setCustomMethodName('')
+    setMeServices([])
+    setSelectedMeServiceIds([])
     setMethodDialogOpen(true)
   }
 
   function openEditMethod(method: any) {
     setEditingMethod(method)
     setCurrentZoneId(method.zone_id)
-    // Check if integration, predefined manual, or custom
     const matchedIntegration = INTEGRATION_METHODS.find(m => m.value === method.name)
-    if (matchedIntegration) {
-      setSelectedMethodName(method.name)
+    if (matchedIntegration || isMeServiceMethod(method.name)) {
+      setSelectedMethodName('__melhor_envio__')
       setCustomMethodName('')
+      // Pre-select this service
+      const serviceId = parseMeServiceId(method.name)
+      if (serviceId !== null) {
+        setSelectedMeServiceIds([serviceId])
+      }
     } else if (MANUAL_METHODS.includes(method.name)) {
       setSelectedMethodName(method.name)
       setCustomMethodName('')
@@ -219,11 +252,91 @@ export default function ShippingPage() {
 
   const isSelectedIntegration = isIntegrationMethod(selectedMethodName)
 
+  async function fetchMeServicesForDialog() {
+    setLoadingMeServices(true)
+    try {
+      const res = await fetch('/api/melhor-envio/services')
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Erro ao buscar servicos')
+      }
+      const data = await res.json()
+      setMeServices(data)
+
+      // Pre-select services that are already in this zone
+      const zone = zones.find(z => z.id === currentZoneId)
+      const existingIds: number[] = []
+        ; (zone?.shipping_methods || []).forEach((m: any) => {
+          const sid = parseMeServiceId(m.name)
+          if (sid !== null) existingIds.push(sid)
+        })
+      setSelectedMeServiceIds(existingIds)
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao buscar servicos do Melhor Envio')
+    } finally {
+      setLoadingMeServices(false)
+    }
+  }
+
+  function toggleMeService(id: number) {
+    setSelectedMeServiceIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
+
   async function handleSaveMethod(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setSavingMethod(true)
     const formData = new FormData(e.currentTarget)
 
+    // --- Melhor Envio: save one method per selected service ---
+    if (selectedMethodName === '__melhor_envio__') {
+      if (selectedMeServiceIds.length === 0) {
+        toast.error('Selecione pelo menos um servico')
+        setSavingMethod(false)
+        return
+      }
+
+      // Delete existing ME methods in this zone first
+      const zone = zones.find(z => z.id === currentZoneId)
+      const existingMeMethodIds = (zone?.shipping_methods || [])
+        .filter((m: any) => isMeServiceMethod(m.name) || m.name === '__melhor_envio__')
+        .map((m: any) => m.id)
+
+      if (existingMeMethodIds.length > 0) {
+        await supabase.from('shipping_methods').delete().in('id', existingMeMethodIds)
+      }
+
+      // Insert one method per selected service
+      const methodsToInsert = selectedMeServiceIds.map((serviceId, idx) => {
+        const service = meServices.find(s => s.id === serviceId)
+        return {
+          zone_id: currentZoneId,
+          name: `__me_service_${serviceId}__`,
+          price: 0,
+          free_shipping_threshold: null,
+          delivery_time_min: null,
+          delivery_time_max: null,
+          is_active: true,
+          display_order: idx,
+        }
+      })
+
+      const { error } = await supabase.from('shipping_methods').insert(methodsToInsert)
+      if (error) {
+        toast.error('Erro ao salvar servicos: ' + error.message)
+        setSavingMethod(false)
+        return
+      }
+
+      toast.success('Servicos Melhor Envio atualizados!')
+      setMethodDialogOpen(false)
+      setSavingMethod(false)
+      loadData()
+      return
+    }
+
+    // --- Manual method ---
     const finalName = getMethodNameForSave()
     if (!finalName) {
       toast.error('Selecione ou digite o nome da forma de entrega')
@@ -234,10 +347,10 @@ export default function ShippingPage() {
     const methodData: any = {
       zone_id: currentZoneId,
       name: finalName,
-      price: isSelectedIntegration ? 0 : parseFloat(formData.get('method_price') as string),
-      free_shipping_threshold: isSelectedIntegration ? null : (formData.get('method_free_threshold') ? parseFloat(formData.get('method_free_threshold') as string) : null),
-      delivery_time_min: isSelectedIntegration ? null : (formData.get('method_time_min') ? parseInt(formData.get('method_time_min') as string) : null),
-      delivery_time_max: isSelectedIntegration ? null : (formData.get('method_time_max') ? parseInt(formData.get('method_time_max') as string) : null),
+      price: parseFloat(formData.get('method_price') as string),
+      free_shipping_threshold: formData.get('method_free_threshold') ? parseFloat(formData.get('method_free_threshold') as string) : null,
+      delivery_time_min: formData.get('method_time_min') ? parseInt(formData.get('method_time_min') as string) : null,
+      delivery_time_max: formData.get('method_time_max') ? parseInt(formData.get('method_time_max') as string) : null,
       is_active: true,
       display_order: formData.get('method_order') ? parseInt(formData.get('method_order') as string) : 0,
     }
@@ -300,6 +413,9 @@ export default function ShippingPage() {
           {zones.map((zone) => {
             const ranges = zone.shipping_zone_ranges || []
             const methods = (zone.shipping_methods || []).sort((a: any, b: any) => a.display_order - b.display_order)
+            // Group ME services together for display
+            const manualMethods = methods.filter((m: any) => !isMeServiceMethod(m.name) && m.name !== '__melhor_envio__')
+            const meMethods = methods.filter((m: any) => isMeServiceMethod(m.name) || m.name === '__melhor_envio__')
 
             return (
               <Card key={zone.id}>
@@ -345,37 +461,23 @@ export default function ShippingPage() {
                       <p className="text-xs text-muted-foreground py-2">Nenhuma forma de entrega cadastrada nesta zona</p>
                     ) : (
                       <div className="space-y-1.5">
-                        {methods.map((m: any) => {
-                          const isInteg = isIntegrationMethod(m.name)
-                          const integInfo = INTEGRATION_METHODS.find(im => im.value === m.name)
-                          return (
-                          <div key={m.id} className={`flex items-center justify-between py-2 px-3 rounded-lg ${isInteg ? 'bg-blue-50 border border-blue-100' : 'bg-gray-50'}`}>
+                        {/* Manual methods */}
+                        {manualMethods.map((m: any) => (
+                          <div key={m.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50">
                             <div className="flex-1 flex items-center gap-2 flex-wrap">
-                              <span className="font-medium text-sm">{integInfo ? integInfo.label : m.name}</span>
-                              {isInteg && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700">
-                                  Integracao
+                              <span className="font-medium text-sm">{m.name}</span>
+                              <span className="text-sm text-muted-foreground">
+                                {formatCurrency(m.price)}
+                              </span>
+                              {m.delivery_time_min != null && m.delivery_time_max != null && (
+                                <span className="text-xs text-muted-foreground">
+                                  ({m.delivery_time_min}-{m.delivery_time_max} dias)
                                 </span>
                               )}
-                              {!isInteg && (
-                                <>
-                                  <span className="text-sm text-muted-foreground">
-                                    {formatCurrency(m.price)}
-                                  </span>
-                                  {m.delivery_time_min != null && m.delivery_time_max != null && (
-                                    <span className="text-xs text-muted-foreground">
-                                      ({m.delivery_time_min}-{m.delivery_time_max} dias)
-                                    </span>
-                                  )}
-                                  {m.free_shipping_threshold && (
-                                    <span className="text-xs text-green-600">
-                                      Gratis acima de {formatCurrency(m.free_shipping_threshold)}
-                                    </span>
-                                  )}
-                                </>
-                              )}
-                              {isInteg && (
-                                <span className="text-xs text-blue-600">Preco e prazo automaticos</span>
+                              {m.free_shipping_threshold && (
+                                <span className="text-xs text-green-600">
+                                  Gratis acima de {formatCurrency(m.free_shipping_threshold)}
+                                </span>
                               )}
                             </div>
                             <div className="flex gap-1">
@@ -387,8 +489,55 @@ export default function ShippingPage() {
                               </Button>
                             </div>
                           </div>
-                          )
-                        })}
+                        ))}
+
+                        {/* ME services grouped */}
+                        {meMethods.length > 0 && (
+                          <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Truck className="h-4 w-4 text-blue-600" />
+                                <span className="font-medium text-sm text-blue-800">Melhor Envio</span>
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700">
+                                  Integracao
+                                </span>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                                  // Open dialog to edit ME services for this zone
+                                  setEditingMethod(null)
+                                  setCurrentZoneId(zone.id)
+                                  setSelectedMethodName('__melhor_envio__')
+                                  setCustomMethodName('')
+                                  setMethodDialogOpen(true)
+                                  fetchMeServicesForDialog()
+                                }}>
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={async () => {
+                                  if (!confirm('Remover todos os servicos Melhor Envio desta zona?')) return
+                                  const ids = meMethods.map((m: any) => m.id)
+                                  await supabase.from('shipping_methods').delete().in('id', ids)
+                                  toast.success('Servicos removidos!')
+                                  loadData()
+                                }}>
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {meMethods.filter((m: any) => isMeServiceMethod(m.name)).map((m: any) => {
+                                const serviceId = parseMeServiceId(m.name)
+                                return (
+                                  <span key={m.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-200 text-blue-900">
+                                    Servico #{serviceId}
+                                  </span>
+                                )
+                              })}
+                            </div>
+                            <p className="text-xs text-blue-600">Preco e prazo calculados automaticamente</p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -515,15 +664,65 @@ export default function ShippingPage() {
                   autoFocus
                 />
               )}
-              {isSelectedIntegration && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
-                  <p className="font-medium">Preco e prazo calculados automaticamente</p>
-                  <p className="mt-1">Os valores serao buscados em tempo real pela integracao no momento do checkout. Configure a integracao em <a href="/dashboard/integrations" className="underline font-medium">Integracoes</a>.</p>
+              {selectedMethodName === '__melhor_envio__' && (
+                <div className="space-y-3">
+                  {meServices.length === 0 && !loadingMeServices && (
+                    <div className="flex items-center gap-2">
+                      <Button type="button" variant="outline" size="sm" onClick={fetchMeServicesForDialog}>
+                        <Truck className="mr-2 h-4 w-4" />
+                        Buscar servicos disponiveis
+                      </Button>
+                    </div>
+                  )}
+                  {loadingMeServices && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Buscando servicos...
+                    </div>
+                  )}
+                  {meServices.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Selecione os servicos *</Label>
+                      <div className="max-h-60 overflow-y-auto space-y-1 border rounded-lg p-2">
+                        {meServices.map((service: any) => (
+                          <label
+                            key={service.id}
+                            className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${selectedMeServiceIds.includes(service.id)
+                              ? 'bg-blue-50 border border-blue-200'
+                              : 'hover:bg-gray-50 border border-transparent'
+                              }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedMeServiceIds.includes(service.id)}
+                              onChange={() => toggleMeService(service.id)}
+                              className="rounded border-gray-300"
+                            />
+                            {service.company_picture && (
+                              <img src={service.company_picture} alt="" className="h-5 w-5 object-contain" />
+                            )}
+                            <div className="flex-1">
+                              <span className="text-sm font-medium">
+                                {service.company_name} - {service.name}
+                              </span>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedMeServiceIds.length} servico(s) selecionado(s)
+                      </p>
+                    </div>
+                  )}
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+                    <p className="font-medium">Preco e prazo calculados automaticamente</p>
+                    <p className="mt-1">Os valores serao buscados em tempo real pela integracao no momento do checkout.</p>
+                  </div>
                 </div>
               )}
             </div>
 
-            {!isSelectedIntegration && (
+            {selectedMethodName !== '__melhor_envio__' && !isMeServiceMethod(selectedMethodName) && selectedMethodName !== '' && (
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -548,10 +747,12 @@ export default function ShippingPage() {
               </>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="method-order">Ordem de exibicao</Label>
-              <Input id="method-order" name="method_order" type="number" defaultValue={editingMethod?.display_order || 0} />
-            </div>
+            {selectedMethodName !== '__melhor_envio__' && (
+              <div className="space-y-2">
+                <Label htmlFor="method-order">Ordem de exibicao</Label>
+                <Input id="method-order" name="method_order" type="number" defaultValue={editingMethod?.display_order || 0} />
+              </div>
+            )}
 
             <div className="flex justify-end space-x-3 pt-4">
               <Button type="button" variant="outline" onClick={() => setMethodDialogOpen(false)}>Cancelar</Button>
