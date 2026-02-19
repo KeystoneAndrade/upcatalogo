@@ -26,7 +26,10 @@
       "Bash(git commit:*)",
       "mcp__mcp-registry__search_mcp_registry",
       "mcp__b16eb429-e7cd-4c94-8b32-92fcc45514eb__list_projects",
-      "mcp__b16eb429-e7cd-4c94-8b32-92fcc45514eb__apply_migration"
+      "mcp__b16eb429-e7cd-4c94-8b32-92fcc45514eb__apply_migration",
+      "WebFetch(domain:docs.melhorenvio.com.br)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(npm run build:*)"
     ]
   }
 }

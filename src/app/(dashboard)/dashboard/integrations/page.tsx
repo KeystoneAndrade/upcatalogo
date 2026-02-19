@@ -8,8 +8,21 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Truck, Zap } from 'lucide-react'
+import { Select } from '@/components/ui/select'
+import { Loader2, Truck, Zap, RefreshCw, MapPin, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
+
+interface MeAddress {
+  id: string
+  label: string
+  postal_code: string
+  address: string
+  number: string
+  complement: string
+  district: string
+  city: string
+  state_abbr: string
+}
 
 export default function IntegrationsPage() {
   const router = useRouter()
@@ -26,12 +39,12 @@ export default function IntegrationsPage() {
   const [meDefaultHeight, setMeDefaultHeight] = useState('11')
   const [meDefaultWidth, setMeDefaultWidth] = useState('11')
   const [meDefaultLength, setMeDefaultLength] = useState('11')
-  const [meAddressStreet, setMeAddressStreet] = useState('')
-  const [meAddressNumber, setMeAddressNumber] = useState('')
-  const [meAddressComplement, setMeAddressComplement] = useState('')
-  const [meAddressNeighborhood, setMeAddressNeighborhood] = useState('')
-  const [meAddressCity, setMeAddressCity] = useState('')
-  const [meAddressState, setMeAddressState] = useState('')
+
+  // ME Addresses state
+  const [meAddresses, setMeAddresses] = useState<MeAddress[]>([])
+  const [meSelectedAddressId, setMeSelectedAddressId] = useState('')
+  const [loadingAddresses, setLoadingAddresses] = useState(false)
+  const [addressesLoaded, setAddressesLoaded] = useState(false)
 
   const supabase = createClient()
 
@@ -57,13 +70,7 @@ export default function IntegrationsPage() {
     setMeDefaultHeight(String(settings.melhor_envio_default_height || '11'))
     setMeDefaultWidth(String(settings.melhor_envio_default_width || '11'))
     setMeDefaultLength(String(settings.melhor_envio_default_length || '11'))
-    const addr = settings.melhor_envio_address || {}
-    setMeAddressStreet(addr.street || '')
-    setMeAddressNumber(addr.number || '')
-    setMeAddressComplement(addr.complement || '')
-    setMeAddressNeighborhood(addr.neighborhood || '')
-    setMeAddressCity(addr.city || '')
-    setMeAddressState(addr.state || '')
+    setMeSelectedAddressId(settings.melhor_envio_address_id || '')
 
     setLoading(false)
   }
@@ -72,6 +79,31 @@ export default function IntegrationsPage() {
     const digits = value.replace(/\D/g, '').slice(0, 8)
     if (digits.length <= 5) return digits
     return `${digits.slice(0, 5)}-${digits.slice(5)}`
+  }
+
+  async function fetchMeAddresses() {
+    if (!meToken) {
+      toast.error('Informe o token de acesso primeiro')
+      return
+    }
+    setLoadingAddresses(true)
+    try {
+      const res = await fetch('/api/melhor-envio/addresses')
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Erro ao buscar enderecos')
+      }
+      const data = await res.json()
+      setMeAddresses(data)
+      setAddressesLoaded(true)
+      if (data.length === 0) {
+        toast.info('Nenhum endereco cadastrado no Melhor Envio')
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao buscar enderecos do Melhor Envio')
+    } finally {
+      setLoadingAddresses(false)
+    }
   }
 
   async function handleSaveME() {
@@ -91,15 +123,9 @@ export default function IntegrationsPage() {
           melhor_envio_default_height: parseFloat(meDefaultHeight) || 11,
           melhor_envio_default_width: parseFloat(meDefaultWidth) || 11,
           melhor_envio_default_length: parseFloat(meDefaultLength) || 11,
-          melhor_envio_address: {
-            street: meAddressStreet,
-            number: meAddressNumber,
-            complement: meAddressComplement,
-            neighborhood: meAddressNeighborhood,
-            city: meAddressCity,
-            state: meAddressState,
-            postal_code: meCepOrigem.replace(/\D/g, ''),
-          },
+          melhor_envio_address_id: meSelectedAddressId || null,
+          // Clean up old manual address field if it exists
+          melhor_envio_address: undefined,
         },
       })
       .eq('id', tenant.id)
@@ -112,6 +138,8 @@ export default function IntegrationsPage() {
     }
     setSaving(false)
   }
+
+  const selectedAddress = meAddresses.find(a => a.id === meSelectedAddressId)
 
   if (loading) return <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
 
@@ -210,39 +238,109 @@ export default function IntegrationsPage() {
               />
             </div>
 
-            {/* Endereco remetente */}
+            {/* Endereco de origem - seletor do Melhor Envio */}
             <div className="space-y-3 pt-3 border-t">
-              <p className="font-medium text-sm">Endereco de origem (remetente)</p>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2 space-y-1">
-                  <Label className="text-xs">Rua</Label>
-                  <Input value={meAddressStreet} onChange={(e) => setMeAddressStreet(e.target.value)} placeholder="Rua / Av." />
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-sm">Endereco de origem (remetente)</p>
+                  <p className="text-xs text-muted-foreground">
+                    Selecione um endereco cadastrado na sua conta Melhor Envio
+                  </p>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Numero</Label>
-                  <Input value={meAddressNumber} onChange={(e) => setMeAddressNumber(e.target.value)} placeholder="123" />
-                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchMeAddresses}
+                  disabled={loadingAddresses || !meToken}
+                >
+                  {loadingAddresses ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                  )}
+                  {addressesLoaded ? 'Atualizar' : 'Buscar enderecos'}
+                </Button>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Complemento</Label>
-                  <Input value={meAddressComplement} onChange={(e) => setMeAddressComplement(e.target.value)} placeholder="Sala 1" />
+
+              {!meToken && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
+                  Informe o token de acesso acima para buscar seus enderecos do Melhor Envio.
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Bairro</Label>
-                  <Input value={meAddressNeighborhood} onChange={(e) => setMeAddressNeighborhood(e.target.value)} placeholder="Centro" />
+              )}
+
+              {meToken && !addressesLoaded && !loadingAddresses && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+                  <MapPin className="inline h-3.5 w-3.5 mr-1 -mt-0.5" />
+                  Clique em &quot;Buscar enderecos&quot; para carregar seus enderecos cadastrados no Melhor Envio.
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Cidade</Label>
-                  <Input value={meAddressCity} onChange={(e) => setMeAddressCity(e.target.value)} placeholder="Sao Paulo" />
+              )}
+
+              {addressesLoaded && meAddresses.length === 0 && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
+                  Nenhum endereco encontrado. Cadastre um endereco em{' '}
+                  <a
+                    href={meSandbox ? 'https://sandbox.melhorenvio.com.br/painel/endereco' : 'https://melhorenvio.com.br/painel/endereco'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline font-medium"
+                  >
+                    {meSandbox ? 'sandbox.melhorenvio.com.br' : 'melhorenvio.com.br'}
+                  </a>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Estado (UF)</Label>
-                  <Input value={meAddressState} onChange={(e) => setMeAddressState(e.target.value.toUpperCase())} placeholder="SP" maxLength={2} />
+              )}
+
+              {meAddresses.length > 0 && (
+                <div className="space-y-2">
+                  <Select
+                    value={meSelectedAddressId}
+                    onChange={(e) => setMeSelectedAddressId(e.target.value)}
+                  >
+                    <option value="">Selecione um endereco...</option>
+                    {meAddresses.map((addr) => (
+                      <option key={addr.id} value={addr.id}>
+                        {addr.label ? `${addr.label} - ` : ''}{addr.address}, {addr.number}{addr.complement ? ` (${addr.complement})` : ''} - {addr.district}, {addr.city}/{addr.state_abbr} - CEP {addr.postal_code}
+                      </option>
+                    ))}
+                  </Select>
+
+                  {selectedAddress && (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded text-sm">
+                      <div className="flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          {selectedAddress.label && (
+                            <p className="font-medium text-green-800 text-xs">{selectedAddress.label}</p>
+                          )}
+                          <p className="text-green-700 text-xs">
+                            {selectedAddress.address}, {selectedAddress.number}
+                            {selectedAddress.complement ? ` - ${selectedAddress.complement}` : ''}
+                          </p>
+                          <p className="text-green-700 text-xs">
+                            {selectedAddress.district}, {selectedAddress.city}/{selectedAddress.state_abbr}
+                          </p>
+                          <p className="text-green-700 text-xs">CEP: {selectedAddress.postal_code}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Previously saved address that's not in the loaded list */}
+                  {meSelectedAddressId && !selectedAddress && !loadingAddresses && (
+                    <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
+                      Endereco salvo anteriormente (ID: {meSelectedAddressId}). Clique em &quot;Atualizar&quot; para verificar.
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
+
+              {/* Previously saved address ID shown when addresses not yet loaded */}
+              {!addressesLoaded && meSelectedAddressId && (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded text-xs text-gray-600">
+                  <CheckCircle2 className="inline h-3.5 w-3.5 mr-1 -mt-0.5 text-green-500" />
+                  Endereco de origem configurado. Clique em &quot;Buscar enderecos&quot; para ver detalhes.
+                </div>
+              )}
             </div>
 
             {/* Dimensoes padrao */}

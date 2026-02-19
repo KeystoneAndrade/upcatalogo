@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { addToCart, extractMeConfig } from '@/lib/melhor-envio'
+import { addToCart, extractMeConfig, getAddressById, getAddresses } from '@/lib/melhor-envio'
 
 export async function POST(request: Request) {
   try {
@@ -27,6 +27,28 @@ export async function POST(request: Request) {
     const settings = tenant.settings as any
     const meConfig = extractMeConfig(settings)
     if (!meConfig) return NextResponse.json({ error: 'Melhor Envio not configured' }, { status: 400 })
+
+    // Fetch sender address from ME API
+    let senderAddress: any = null
+
+    if (meConfig.address_id) {
+      // Try to fetch the specific saved address
+      senderAddress = await getAddressById(meConfig, meConfig.address_id)
+    }
+
+    // If no saved address or fetch failed, try to get the first address
+    if (!senderAddress) {
+      const addresses = await getAddresses(meConfig)
+      if (addresses.length > 0) {
+        senderAddress = addresses[0]
+      }
+    }
+
+    if (!senderAddress) {
+      return NextResponse.json({
+        error: 'Nenhum endereco de remetente encontrado. Cadastre um endereco no Melhor Envio.'
+      }, { status: 400 })
+    }
 
     // Fetch order
     const { data: order } = await supabase
@@ -67,10 +89,14 @@ export async function POST(request: Request) {
       }
     })
 
-    const meAddress = meConfig.address || {
-      street: '', number: '', complement: '', neighborhood: '',
-      city: '', state: '', postal_code: meConfig.cep_origem,
-    }
+    // Extract sender address fields from ME address object
+    const fromAddress = senderAddress.address || ''
+    const fromNumber = senderAddress.number || ''
+    const fromComplement = senderAddress.complement || ''
+    const fromDistrict = senderAddress.district || ''
+    const fromCity = senderAddress.city?.city || senderAddress.city || ''
+    const fromStateAbbr = senderAddress.city?.state?.state_abbr || senderAddress.state_abbr || ''
+    const fromPostalCode = senderAddress.postal_code || meConfig.cep_origem
 
     const cartPayload = {
       service: order.melhor_envio_service_id as number,
@@ -78,13 +104,13 @@ export async function POST(request: Request) {
         name: tenant.name,
         phone: settings.whatsapp || '',
         email: settings.email || session.user.email || '',
-        address: meAddress.street,
-        number: meAddress.number,
-        complement: meAddress.complement || '',
-        neighborhood: meAddress.neighborhood,
-        city: meAddress.city,
-        state_abbr: meAddress.state,
-        postal_code: meConfig.cep_origem,
+        address: fromAddress,
+        number: fromNumber,
+        complement: fromComplement,
+        neighborhood: fromDistrict,
+        city: fromCity,
+        state_abbr: fromStateAbbr,
+        postal_code: fromPostalCode,
       },
       to: {
         name: order.customer_name,

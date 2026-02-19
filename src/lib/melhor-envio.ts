@@ -9,14 +9,20 @@ export interface MelhorEnvioConfig {
   default_height?: number
   default_width?: number
   default_length?: number
-  address?: {
-    street: string
-    number: string
-    complement?: string
-    neighborhood: string
+  address_id?: string  // ID do endereco selecionado no Melhor Envio
+}
+
+export interface MelhorEnvioAddress {
+  id: string
+  label: string
+  postal_code: string
+  address: string
+  number: string
+  complement: string
+  district: string
+  city: {
     city: string
-    state: string
-    postal_code: string
+    state: { state_abbr: string }
   }
 }
 
@@ -207,6 +213,24 @@ export async function getTracking(
   })
 }
 
+// Get user addresses from Melhor Envio
+export async function getAddresses(config: MelhorEnvioConfig): Promise<MelhorEnvioAddress[]> {
+  const data = await meRequest(config, '/api/v2/me/addresses', { method: 'GET' })
+  if (Array.isArray(data)) return data
+  if (data?.data && Array.isArray(data.data)) return data.data
+  return []
+}
+
+// Get a specific address by ID
+export async function getAddressById(config: MelhorEnvioConfig, addressId: string): Promise<MelhorEnvioAddress | null> {
+  try {
+    const data = await meRequest(config, `/api/v2/me/addresses/${addressId}`, { method: 'GET' })
+    return data || null
+  } catch {
+    return null
+  }
+}
+
 // Cancel a shipment
 export async function cancelShipment(
   config: MelhorEnvioConfig,
@@ -239,6 +263,6 @@ export function extractMeConfig(settings: any): MelhorEnvioConfig | null {
     default_height: settings.melhor_envio_default_height || 11,
     default_width: settings.melhor_envio_default_width || 11,
     default_length: settings.melhor_envio_default_length || 11,
-    address: settings.melhor_envio_address || undefined,
+    address_id: settings.melhor_envio_address_id || undefined,
   }
 }
