@@ -14,6 +14,7 @@ import {
   TicketPercent,
   Store,
   Image as ImageIcon,
+  Plug,
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -34,6 +35,7 @@ const navigation = [
   { name: 'Pedidos', href: '/dashboard/orders', icon: ShoppingCart },
   { name: 'Entrega', href: '/dashboard/shipping', icon: Truck },
   { name: 'Pagamentos', href: '/dashboard/payments', icon: CreditCard },
+  { name: 'Integracoes', href: '/dashboard/integrations', icon: Plug },
   { name: 'Configuracoes', href: '/dashboard/settings', icon: Settings },
 ]
 

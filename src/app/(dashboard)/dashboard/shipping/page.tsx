@@ -12,24 +12,24 @@ import { Plus, Pencil, Trash2, Loader2, MapPin, Package, X, Truck, Info } from '
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/utils'
 
-const PREDEFINED_METHODS = [
-  'PAC',
-  'SEDEX',
-  'SEDEX 10',
-  'SEDEX 12',
-  'SEDEX Hoje',
-  'Mini Envios',
+const MANUAL_METHODS = [
   'Motoboy',
   'Transportadora',
   'Retirada no local',
   'Entrega propria',
   'Frete fixo',
-  'JadLog - .Package',
-  'JadLog - .Com',
-  'Loggi',
-  'Azul Cargo',
-  'Latam Cargo',
 ]
+
+const INTEGRATION_METHODS = [
+  { value: '__melhor_envio__', label: 'Melhor Envio (calculo automatico)', integration: 'melhor_envio' },
+]
+
+// Todos para lookup
+const ALL_PREDEFINED = [...MANUAL_METHODS]
+
+function isIntegrationMethod(name: string) {
+  return INTEGRATION_METHODS.some(m => m.value === name)
+}
 
 function formatCep(value: string) {
   const digits = value.replace(/\D/g, '').slice(0, 8)
@@ -197,8 +197,12 @@ export default function ShippingPage() {
   function openEditMethod(method: any) {
     setEditingMethod(method)
     setCurrentZoneId(method.zone_id)
-    // Check if the method name matches a predefined one
-    if (PREDEFINED_METHODS.includes(method.name)) {
+    // Check if integration, predefined manual, or custom
+    const matchedIntegration = INTEGRATION_METHODS.find(m => m.value === method.name)
+    if (matchedIntegration) {
+      setSelectedMethodName(method.name)
+      setCustomMethodName('')
+    } else if (MANUAL_METHODS.includes(method.name)) {
       setSelectedMethodName(method.name)
       setCustomMethodName('')
     } else {
@@ -212,6 +216,8 @@ export default function ShippingPage() {
     if (selectedMethodName === '__custom__') return customMethodName
     return selectedMethodName
   }
+
+  const isSelectedIntegration = isIntegrationMethod(selectedMethodName)
 
   async function handleSaveMethod(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -228,10 +234,10 @@ export default function ShippingPage() {
     const methodData: any = {
       zone_id: currentZoneId,
       name: finalName,
-      price: parseFloat(formData.get('method_price') as string),
-      free_shipping_threshold: formData.get('method_free_threshold') ? parseFloat(formData.get('method_free_threshold') as string) : null,
-      delivery_time_min: formData.get('method_time_min') ? parseInt(formData.get('method_time_min') as string) : null,
-      delivery_time_max: formData.get('method_time_max') ? parseInt(formData.get('method_time_max') as string) : null,
+      price: isSelectedIntegration ? 0 : parseFloat(formData.get('method_price') as string),
+      free_shipping_threshold: isSelectedIntegration ? null : (formData.get('method_free_threshold') ? parseFloat(formData.get('method_free_threshold') as string) : null),
+      delivery_time_min: isSelectedIntegration ? null : (formData.get('method_time_min') ? parseInt(formData.get('method_time_min') as string) : null),
+      delivery_time_max: isSelectedIntegration ? null : (formData.get('method_time_max') ? parseInt(formData.get('method_time_max') as string) : null),
       is_active: true,
       display_order: formData.get('method_order') ? parseInt(formData.get('method_order') as string) : 0,
     }
@@ -276,7 +282,7 @@ export default function ShippingPage() {
           </p>
           <p className="mt-1 text-blue-700">
             Alem das zonas manuais abaixo, voce pode ativar o calculo automatico de frete via Correios, JadLog e outras transportadoras.
-            Configure em <a href="/dashboard/settings" className="underline font-medium">Configuracoes → Melhor Envio</a>.
+            Configure em <a href="/dashboard/integrations" className="underline font-medium">Integracoes → Melhor Envio</a>.
           </p>
         </div>
       </div>
@@ -339,22 +345,37 @@ export default function ShippingPage() {
                       <p className="text-xs text-muted-foreground py-2">Nenhuma forma de entrega cadastrada nesta zona</p>
                     ) : (
                       <div className="space-y-1.5">
-                        {methods.map((m: any) => (
-                          <div key={m.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
-                            <div className="flex-1">
-                              <span className="font-medium text-sm">{m.name}</span>
-                              <span className="text-sm text-muted-foreground ml-3">
-                                {formatCurrency(m.price)}
-                              </span>
-                              {m.delivery_time_min != null && m.delivery_time_max != null && (
-                                <span className="text-xs text-muted-foreground ml-2">
-                                  ({m.delivery_time_min}-{m.delivery_time_max} dias)
+                        {methods.map((m: any) => {
+                          const isInteg = isIntegrationMethod(m.name)
+                          const integInfo = INTEGRATION_METHODS.find(im => im.value === m.name)
+                          return (
+                          <div key={m.id} className={`flex items-center justify-between py-2 px-3 rounded-lg ${isInteg ? 'bg-blue-50 border border-blue-100' : 'bg-gray-50'}`}>
+                            <div className="flex-1 flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-sm">{integInfo ? integInfo.label : m.name}</span>
+                              {isInteg && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700">
+                                  Integracao
                                 </span>
                               )}
-                              {m.free_shipping_threshold && (
-                                <span className="text-xs text-green-600 ml-2">
-                                  Gratis acima de {formatCurrency(m.free_shipping_threshold)}
-                                </span>
+                              {!isInteg && (
+                                <>
+                                  <span className="text-sm text-muted-foreground">
+                                    {formatCurrency(m.price)}
+                                  </span>
+                                  {m.delivery_time_min != null && m.delivery_time_max != null && (
+                                    <span className="text-xs text-muted-foreground">
+                                      ({m.delivery_time_min}-{m.delivery_time_max} dias)
+                                    </span>
+                                  )}
+                                  {m.free_shipping_threshold && (
+                                    <span className="text-xs text-green-600">
+                                      Gratis acima de {formatCurrency(m.free_shipping_threshold)}
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                              {isInteg && (
+                                <span className="text-xs text-blue-600">Preco e prazo automaticos</span>
                               )}
                             </div>
                             <div className="flex gap-1">
@@ -366,7 +387,8 @@ export default function ShippingPage() {
                               </Button>
                             </div>
                           </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     )}
                   </div>
@@ -472,9 +494,16 @@ export default function ShippingPage() {
                 required={selectedMethodName !== '__custom__'}
               >
                 <option value="" disabled>Selecione uma opcao...</option>
-                {PREDEFINED_METHODS.map((name) => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
+                <optgroup label="Integracoes">
+                  {INTEGRATION_METHODS.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Manuais">
+                  {MANUAL_METHODS.map((name) => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </optgroup>
                 <option value="__custom__">Outro (digitar nome)</option>
               </Select>
               {selectedMethodName === '__custom__' && (
@@ -486,31 +515,41 @@ export default function ShippingPage() {
                   autoFocus
                 />
               )}
+              {isSelectedIntegration && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+                  <p className="font-medium">Preco e prazo calculados automaticamente</p>
+                  <p className="mt-1">Os valores serao buscados em tempo real pela integracao no momento do checkout. Configure a integracao em <a href="/dashboard/integrations" className="underline font-medium">Integracoes</a>.</p>
+                </div>
+              )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="method-price">Preco do frete (R$) *</Label>
-                <Input id="method-price" name="method_price" type="number" step="0.01" min="0" required defaultValue={editingMethod?.price} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="method-free">Frete gratis acima de (R$)</Label>
-                <Input id="method-free" name="method_free_threshold" type="number" step="0.01" min="0" defaultValue={editingMethod?.free_shipping_threshold} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="method-min">Prazo min (dias)</Label>
-                <Input id="method-min" name="method_time_min" type="number" min="0" defaultValue={editingMethod?.delivery_time_min} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="method-max">Prazo max (dias)</Label>
-                <Input id="method-max" name="method_time_max" type="number" min="0" defaultValue={editingMethod?.delivery_time_max} />
-              </div>
-            </div>
+            {!isSelectedIntegration && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="method-price">Preco do frete (R$) *</Label>
+                    <Input id="method-price" name="method_price" type="number" step="0.01" min="0" required defaultValue={editingMethod?.price} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="method-free">Frete gratis acima de (R$)</Label>
+                    <Input id="method-free" name="method_free_threshold" type="number" step="0.01" min="0" defaultValue={editingMethod?.free_shipping_threshold} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="method-min">Prazo min (dias)</Label>
+                    <Input id="method-min" name="method_time_min" type="number" min="0" defaultValue={editingMethod?.delivery_time_min} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="method-max">Prazo max (dias)</Label>
+                    <Input id="method-max" name="method_time_max" type="number" min="0" defaultValue={editingMethod?.delivery_time_max} />
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="space-y-2">
-              <Label htmlFor="method-order">Ordem de exibição</Label>
+              <Label htmlFor="method-order">Ordem de exibicao</Label>
               <Input id="method-order" name="method_order" type="number" defaultValue={editingMethod?.display_order || 0} />
             </div>
 
