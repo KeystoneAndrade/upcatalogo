@@ -121,7 +121,9 @@ export default function CheckoutPage() {
     setSearchingCep(true)
     setSelectedMethod(null)
 
+    // Garantir que pegamos o settings mais atual do tenant
     const settings = (tenant?.settings as any) || {}
+    console.log('[Frete] Settings Bruto do Tenant:', settings)
     let meMethods: any[] = []
 
     // 1. Buscar zonas manuais que cobrem este CEP
