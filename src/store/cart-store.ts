@@ -11,6 +11,10 @@ export interface CartItem {
   variant?: string
   stock_quantity?: number
   manage_stock?: boolean
+  weight?: number | null
+  height?: number | null
+  width?: number | null
+  length?: number | null
 }
 
 interface CartStore {

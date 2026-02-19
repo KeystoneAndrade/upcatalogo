@@ -20,7 +20,6 @@ import {
   MapPin,
   Search,
   AlertCircle,
-  CheckCircle2,
   Tag,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -190,10 +189,11 @@ export default function CheckoutPage() {
         const meProducts = items.map(item => {
           const prod = productMap[item.productId] || {}
           return {
-            weight: prod.weight ?? settings.melhor_envio_default_weight ?? 0.3,
-            height: prod.height ?? settings.melhor_envio_default_height ?? 11,
-            width: prod.width ?? settings.melhor_envio_default_width ?? 11,
-            length: prod.length ?? settings.melhor_envio_default_length ?? 11,
+            // Prioridade: dimensao da variacao (CartItem) → produto → default tenant → minimo ME
+            weight: item.weight ?? prod.weight ?? settings.melhor_envio_default_weight ?? 0.3,
+            height: item.height ?? prod.height ?? settings.melhor_envio_default_height ?? 11,
+            width: item.width ?? prod.width ?? settings.melhor_envio_default_width ?? 11,
+            length: item.length ?? prod.length ?? settings.melhor_envio_default_length ?? 11,
             quantity: item.quantity,
             price: item.price,
           }
@@ -392,6 +392,10 @@ export default function CheckoutPage() {
         price: item.price,
         image_url: item.image,
         variant: item.variant || null,
+        weight: item.weight ?? null,
+        height: item.height ?? null,
+        width: item.width ?? null,
+        length: item.length ?? null,
       })),
       payment_method: selectedPayment || 'Nao informado',
       shipping_method: selectedMethod?.name || 'Retirada',
@@ -623,16 +627,6 @@ _Pedido via UP Catalogo_`
                     </div>
                   )}
 
-                  {selectedMethod && (
-                    <div className="flex items-center gap-2 text-green-600 text-sm">
-                      <CheckCircle2 className="h-4 w-4" />
-                      <span>
-                        Frete: {getShippingCost() > 0 ? formatCurrency(getShippingCost()) : 'Gratis'}
-                        {selectedMethod.delivery_time_min && selectedMethod.delivery_time_max &&
-                          ` | ${selectedMethod.delivery_time_min}-${selectedMethod.delivery_time_max} dias uteis`}
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">

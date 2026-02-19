@@ -78,14 +78,14 @@ export async function POST(request: Request) {
       }
     }
 
-    // Build volumes
+    // Build volumes — prioridade: dimensao do item (variacao) → produto → default tenant → minimo ME
     const volumes = items.map((item: any) => {
       const prod = productMap[item.product_id] || {}
       return {
-        height: prod.height ?? meConfig.default_height ?? 11,
-        width: prod.width ?? meConfig.default_width ?? 11,
-        length: prod.length ?? meConfig.default_length ?? 11,
-        weight: (prod.weight ?? meConfig.default_weight ?? 0.3) * item.quantity,
+        height: item.height ?? prod.height ?? meConfig.default_height ?? 11,
+        width: item.width ?? prod.width ?? meConfig.default_width ?? 11,
+        length: item.length ?? prod.length ?? meConfig.default_length ?? 11,
+        weight: (item.weight ?? prod.weight ?? meConfig.default_weight ?? 0.3) * item.quantity,
       }
     })
 

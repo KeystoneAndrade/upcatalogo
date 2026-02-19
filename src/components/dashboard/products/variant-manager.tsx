@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, X, RefreshCw, Trash2 } from 'lucide-react'
+import { Plus, X, RefreshCw, Trash2, Package } from 'lucide-react'
 
 export interface VariantAttribute {
   name: string
@@ -22,6 +22,10 @@ export interface VariantItem {
   manage_stock: boolean
   image_url: string | null
   is_active: boolean
+  weight: number | null
+  height: number | null
+  width: number | null
+  length: number | null
 }
 
 export interface VariantsData {
@@ -139,6 +143,10 @@ export function VariantManager({ value, onChange, basePrice }: VariantManagerPro
         manage_stock: false,
         image_url: null,
         is_active: true,
+        weight: null,
+        height: null,
+        width: null,
+        length: null,
       }
     })
 
@@ -267,6 +275,10 @@ export function VariantManager({ value, onChange, basePrice }: VariantManagerPro
                   <th className="text-left p-3 font-medium">Preco (R$)</th>
                   <th className="text-left p-3 font-medium">SKU</th>
                   <th className="text-left p-3 font-medium">Estoque</th>
+                  <th className="text-left p-3 font-medium" title="Peso (kg)">Peso</th>
+                  <th className="text-left p-3 font-medium" title="Altura (cm)">Alt.</th>
+                  <th className="text-left p-3 font-medium" title="Largura (cm)">Larg.</th>
+                  <th className="text-left p-3 font-medium" title="Comprimento (cm)">Comp.</th>
                   <th className="text-center p-3 font-medium">Ativo</th>
                   <th className="p-3"></th>
                 </tr>
@@ -306,6 +318,58 @@ export function VariantManager({ value, onChange, basePrice }: VariantManagerPro
                             updateVariantItem(item.id, 'stock_quantity', parseInt(e.target.value) || 0)
                           }
                           className="w-20"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <Input
+                          type="number"
+                          step="0.001"
+                          min="0"
+                          value={item.weight ?? ''}
+                          onChange={(e) =>
+                            updateVariantItem(item.id, 'weight', e.target.value ? parseFloat(e.target.value) : null)
+                          }
+                          className="w-20"
+                          placeholder="kg"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          value={item.height ?? ''}
+                          onChange={(e) =>
+                            updateVariantItem(item.id, 'height', e.target.value ? parseFloat(e.target.value) : null)
+                          }
+                          className="w-16"
+                          placeholder="cm"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          value={item.width ?? ''}
+                          onChange={(e) =>
+                            updateVariantItem(item.id, 'width', e.target.value ? parseFloat(e.target.value) : null)
+                          }
+                          className="w-16"
+                          placeholder="cm"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          value={item.length ?? ''}
+                          onChange={(e) =>
+                            updateVariantItem(item.id, 'length', e.target.value ? parseFloat(e.target.value) : null)
+                          }
+                          className="w-16"
+                          placeholder="cm"
                         />
                       </td>
                       <td className="p-3 text-center">

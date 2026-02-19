@@ -75,10 +75,12 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
       }
     }
 
-    const weightVal = formData.get('weight') as string
-    const heightVal = formData.get('height') as string
-    const widthVal = formData.get('width') as string
-    const lengthVal = formData.get('length') as string
+    // Dimensoes de envio: somente para produtos simples (sem variacoes)
+    // Para produtos com variacoes, as dimensoes ficam em cada variacao
+    const weightVal = !hasVariants ? formData.get('weight') as string : null
+    const heightVal = !hasVariants ? formData.get('height') as string : null
+    const widthVal = !hasVariants ? formData.get('width') as string : null
+    const lengthVal = !hasVariants ? formData.get('length') as string : null
 
     const data = {
       tenant_id: tenantId,
@@ -248,37 +250,39 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
         )}
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Envio
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-xs text-muted-foreground">
-            Deixe em branco para usar as dimensoes padrao da loja (configuradas em Configuracoes → Melhor Envio)
-          </p>
-          <div className="grid grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="weight">Peso (kg)</Label>
-              <Input id="weight" name="weight" type="number" step="0.001" min="0" placeholder="0.300" defaultValue={product?.weight || ''} />
+      {!hasVariants && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Envio
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Deixe em branco para usar as dimensoes padrao da loja (configuradas em Integracoes → Melhor Envio)
+            </p>
+            <div className="grid grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="weight">Peso (kg)</Label>
+                <Input id="weight" name="weight" type="number" step="0.001" min="0" placeholder="0.300" defaultValue={product?.weight || ''} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="height">Altura (cm)</Label>
+                <Input id="height" name="height" type="number" step="0.1" min="0" placeholder="11" defaultValue={product?.height || ''} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="width">Largura (cm)</Label>
+                <Input id="width" name="width" type="number" step="0.1" min="0" placeholder="11" defaultValue={product?.width || ''} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="length">Comprimento (cm)</Label>
+                <Input id="length" name="length" type="number" step="0.1" min="0" placeholder="11" defaultValue={product?.length || ''} />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="height">Altura (cm)</Label>
-              <Input id="height" name="height" type="number" step="0.1" min="0" placeholder="11" defaultValue={product?.height || ''} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="width">Largura (cm)</Label>
-              <Input id="width" name="width" type="number" step="0.1" min="0" placeholder="11" defaultValue={product?.width || ''} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="length">Comprimento (cm)</Label>
-              <Input id="length" name="length" type="number" step="0.1" min="0" placeholder="11" defaultValue={product?.length || ''} />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

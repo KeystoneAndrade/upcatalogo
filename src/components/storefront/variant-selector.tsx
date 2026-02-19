@@ -23,6 +23,10 @@ interface VariantItem {
   manage_stock: boolean
   image_url: string | null
   is_active: boolean
+  weight?: number | null
+  height?: number | null
+  width?: number | null
+  length?: number | null
 }
 
 interface VariantsData {
@@ -126,6 +130,10 @@ export function VariantSelector({ product }: VariantSelectorProps) {
       variant: variantLabel,
       stock_quantity: selectedVariant.stock_quantity,
       manage_stock: selectedVariant.manage_stock,
+      weight: selectedVariant.weight ?? null,
+      height: selectedVariant.height ?? null,
+      width: selectedVariant.width ?? null,
+      length: selectedVariant.length ?? null,
     })
     toast.success('Adicionado ao carrinho!')
     if (settings.open_cart_on_add) {

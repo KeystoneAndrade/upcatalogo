@@ -19,6 +19,10 @@ export function AddToCartButton({ product }: { product: any }) {
       image: product.image_url,
       stock_quantity: product.stock_quantity,
       manage_stock: product.manage_stock,
+      weight: product.weight ?? null,
+      height: product.height ?? null,
+      width: product.width ?? null,
+      length: product.length ?? null,
     })
     toast.success('Adicionado ao carrinho!')
     if (settings.open_cart_on_add) {
