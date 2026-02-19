@@ -56,7 +56,6 @@ export default function CheckoutPage() {
   const [validatingCoupon, setValidatingCoupon] = useState(false)
 
   useEffect(() => {
-    console.log('[Checkout] Componente montado. Carregando dados...')
     setMounted(true)
     loadTenantData()
   }, [])
@@ -110,10 +109,8 @@ export default function CheckoutPage() {
   }
 
   async function searchCep() {
-    console.log('[Frete] Botao clicado. CEP digitado:', cep)
     const cepNorm = normalizeCep(cep)
     if (cepNorm.length !== 8) {
-      console.warn('[Frete] CEP invalido (precisa ter 8 digitos):', cepNorm)
       toast.error('Digite um CEP valido com 8 digitos')
       return
     }
@@ -123,7 +120,6 @@ export default function CheckoutPage() {
 
     // Garantir que pegamos o settings mais atual do tenant
     const settings = (tenant?.settings as any) || {}
-    console.log('[Frete] Settings Bruto do Tenant:', settings)
     let meMethods: any[] = []
 
     // 1. Buscar zonas manuais que cobrem este CEP
@@ -175,15 +171,6 @@ export default function CheckoutPage() {
     const isGlobalEnabled = !!settings.melhor_envio_enabled
     const shouldUseMelhorEnvio = (isGlobalEnabled || hasMeInZones) && hasToken && tenant?.id
 
-    console.log('[Frete] Depuracao Config:')
-    console.log(' - CEP:', cepNorm)
-    console.log(' - Global Enabled:', isGlobalEnabled)
-    console.log(' - Token Presente:', hasToken)
-    console.log(' - Servicos na Zona:', meServiceIds)
-    console.log(' - Marcador Legado:', hasLegacyMeMarker)
-    console.log(' - Tenant ID:', tenant?.id)
-    console.log(' - Resultado Final: shouldUseMelhorEnvio =', shouldUseMelhorEnvio)
-
     if (shouldUseMelhorEnvio) {
       try {
         const supabase = createClient()
@@ -225,13 +212,11 @@ export default function CheckoutPage() {
 
         if (res.ok) {
           const services = await res.json()
-          console.log('[Frete] Resultado Melhor Envio:', services)
 
           if (Array.isArray(services)) {
             const hasErrors = services.some(s => s.error)
             if (hasErrors) {
               const errors = services.filter(s => s.error).map(s => s.error)
-              console.warn('[Frete] Servicos com erro:', errors)
             }
 
             meMethods = services
@@ -260,11 +245,9 @@ export default function CheckoutPage() {
           }
         } else {
           const errData = await res.json()
-          console.error('[Frete] Erro API:', errData)
           toast.error(`Falha no calculo: ${errData.error || 'Erro desconhecido'}`)
         }
       } catch (err) {
-        console.error('Erro ao consultar Melhor Envio:', err)
         toast.error('Erro ao calcular frete via Melhor Envio. Tente novamente.')
       }
     }
