@@ -56,6 +56,7 @@ export default function CheckoutPage() {
   const [validatingCoupon, setValidatingCoupon] = useState(false)
 
   useEffect(() => {
+    console.log('[Checkout] Componente montado. Carregando dados...')
     setMounted(true)
     loadTenantData()
   }, [])
@@ -109,8 +110,10 @@ export default function CheckoutPage() {
   }
 
   async function searchCep() {
+    console.log('[Frete] Botao clicado. CEP digitado:', cep)
     const cepNorm = normalizeCep(cep)
     if (cepNorm.length !== 8) {
+      console.warn('[Frete] CEP invalido (precisa ter 8 digitos):', cepNorm)
       toast.error('Digite um CEP valido com 8 digitos')
       return
     }
@@ -138,28 +141,36 @@ export default function CheckoutPage() {
       }
     })
 
-    // 2. Buscar opcoes Melhor Envio se habilitado
-    let meMethods: any[] = []
-    const settings = (tenant?.settings as any) || {}
-
-    // Detect ME service IDs from matched zones
+    // Detect ME service IDs and legacy markers from matched zones
     const meServiceIds: number[] = []
+    let hasLegacyMeMarker = false
+
     allShippingZones.forEach(zone => {
       const hasMatch = zone.shipping_zone_ranges?.some((range: any) => {
         return cepNorm >= range.cep_start && cepNorm <= range.cep_end
       })
       if (hasMatch) {
         zone.shipping_methods?.forEach((method: any) => {
-          if (method.is_active && method.name.startsWith('__me_service_')) {
-            const match = method.name.match(/^__me_service_(\d+)__$/)
-            if (match) meServiceIds.push(parseInt(match[1]))
+          if (method.is_active) {
+            if (method.name.startsWith('__me_service_')) {
+              const match = method.name.match(/^__me_service_(\d+)__$/)
+              if (match) meServiceIds.push(parseInt(match[1]))
+            } else if (method.name === '__melhor_envio__') {
+              hasLegacyMeMarker = true
+            }
           }
         })
       }
     })
 
-    const hasMeInZones = meServiceIds.length > 0
+    const hasMeInZones = meServiceIds.length > 0 || hasLegacyMeMarker
     const shouldUseMelhorEnvio = (settings.melhor_envio_enabled || hasMeInZones) && settings.melhor_envio_token && tenant?.id
+
+    console.log('[Frete] Busca CEP:', cepNorm)
+    console.log('[Frete] Metodos manuais encontrados:', manualMethods.length)
+    console.log('[Frete] Melhor Envio habilitado?', shouldUseMelhorEnvio)
+    console.log('[Frete] IDs de servico detectados nas zonas:', meServiceIds)
+    console.log('[Frete] Marcador legado detectado?', hasLegacyMeMarker)
 
     if (shouldUseMelhorEnvio) {
       try {
@@ -202,20 +213,43 @@ export default function CheckoutPage() {
 
         if (res.ok) {
           const services = await res.json()
+          console.log('[Frete] Resultado Melhor Envio:', services)
+
           if (Array.isArray(services)) {
-            meMethods = services.map((s: any) => ({
-              id: `me-${s.id}`,
-              name: `${s.company?.name || ''} - ${s.name || ''}`.trim(),
-              price: parseFloat(s.custom_price || s.price || 0),
-              delivery_time_min: s.delivery_time,
-              delivery_time_max: s.delivery_time,
-              free_shipping_threshold: null,
-              is_melhor_envio: true,
-              melhor_envio_service_id: s.id,
-              melhor_envio_service_name: `${s.company?.name || ''} ${s.name || ''}`.trim(),
-              melhor_envio_company_picture: s.company?.picture || null,
-            }))
+            const hasErrors = services.some(s => s.error)
+            if (hasErrors) {
+              const errors = services.filter(s => s.error).map(s => s.error)
+              console.warn('[Frete] Servicos com erro:', errors)
+            }
+
+            meMethods = services
+              .filter((s: any) => !s.error)
+              .map((s: any) => ({
+                id: `me-${s.id}`,
+                name: `${s.company?.name || ''} - ${s.name || ''}`.trim(),
+                price: parseFloat(s.custom_price || s.price || 0),
+                delivery_time_min: s.delivery_time,
+                delivery_time_max: s.delivery_time,
+                free_shipping_threshold: null,
+                is_melhor_envio: true,
+                melhor_envio_service_id: s.id,
+                melhor_envio_service_name: `${s.company?.name || ''} ${s.name || ''}`.trim(),
+                melhor_envio_company_picture: s.company?.picture || null,
+              }))
+
+            if (meMethods.length === 0 && services.length > 0) {
+              const firstError = services.find(s => s.error)?.error
+              if (settings.melhor_envio_sandbox) {
+                toast.info(`Nota: No modo Sandbox, alguns CEPs podem nao retornar frete. Erro: ${firstError}`)
+              } else {
+                toast.error(`Melhor Envio: ${firstError}`)
+              }
+            }
           }
+        } else {
+          const errData = await res.json()
+          console.error('[Frete] Erro API:', errData)
+          toast.error(`Falha no calculo: ${errData.error || 'Erro desconhecido'}`)
         }
       } catch (err) {
         console.error('Erro ao consultar Melhor Envio:', err)
