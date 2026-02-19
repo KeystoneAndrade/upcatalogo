@@ -7,9 +7,29 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Select } from '@/components/ui/select'
 import { Plus, Pencil, Trash2, Loader2, MapPin, Package, X, Truck, Info } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/utils'
+
+const PREDEFINED_METHODS = [
+  'PAC',
+  'SEDEX',
+  'SEDEX 10',
+  'SEDEX 12',
+  'SEDEX Hoje',
+  'Mini Envios',
+  'Motoboy',
+  'Transportadora',
+  'Retirada no local',
+  'Entrega propria',
+  'Frete fixo',
+  'JadLog - .Package',
+  'JadLog - .Com',
+  'Loggi',
+  'Azul Cargo',
+  'Latam Cargo',
+]
 
 function formatCep(value: string) {
   const digits = value.replace(/\D/g, '').slice(0, 8)
@@ -44,6 +64,8 @@ export default function ShippingPage() {
   const [editingMethod, setEditingMethod] = useState<any>(null)
   const [currentZoneId, setCurrentZoneId] = useState('')
   const [savingMethod, setSavingMethod] = useState(false)
+  const [selectedMethodName, setSelectedMethodName] = useState('')
+  const [customMethodName, setCustomMethodName] = useState('')
 
   useEffect(() => { loadData() }, [])
 
@@ -167,13 +189,28 @@ export default function ShippingPage() {
   function openNewMethod(zoneId: string) {
     setEditingMethod(null)
     setCurrentZoneId(zoneId)
+    setSelectedMethodName('')
+    setCustomMethodName('')
     setMethodDialogOpen(true)
   }
 
   function openEditMethod(method: any) {
     setEditingMethod(method)
     setCurrentZoneId(method.zone_id)
+    // Check if the method name matches a predefined one
+    if (PREDEFINED_METHODS.includes(method.name)) {
+      setSelectedMethodName(method.name)
+      setCustomMethodName('')
+    } else {
+      setSelectedMethodName('__custom__')
+      setCustomMethodName(method.name)
+    }
     setMethodDialogOpen(true)
+  }
+
+  function getMethodNameForSave(): string {
+    if (selectedMethodName === '__custom__') return customMethodName
+    return selectedMethodName
   }
 
   async function handleSaveMethod(e: React.FormEvent<HTMLFormElement>) {
@@ -181,9 +218,16 @@ export default function ShippingPage() {
     setSavingMethod(true)
     const formData = new FormData(e.currentTarget)
 
+    const finalName = getMethodNameForSave()
+    if (!finalName) {
+      toast.error('Selecione ou digite o nome da forma de entrega')
+      setSavingMethod(false)
+      return
+    }
+
     const methodData: any = {
       zone_id: currentZoneId,
-      name: formData.get('method_name') as string,
+      name: finalName,
       price: parseFloat(formData.get('method_price') as string),
       free_shipping_threshold: formData.get('method_free_threshold') ? parseFloat(formData.get('method_free_threshold') as string) : null,
       delivery_time_min: formData.get('method_time_min') ? parseInt(formData.get('method_time_min') as string) : null,
@@ -416,8 +460,32 @@ export default function ShippingPage() {
           </DialogHeader>
           <form onSubmit={handleSaveMethod} className="space-y-4 mt-4">
             <div className="space-y-2">
-              <Label htmlFor="method-name">Nome *</Label>
-              <Input id="method-name" name="method_name" required defaultValue={editingMethod?.name} placeholder="Ex: Sedex, PAC, Motoboy" />
+              <Label>Forma de entrega *</Label>
+              <Select
+                value={selectedMethodName}
+                onChange={(e) => {
+                  setSelectedMethodName(e.target.value)
+                  if (e.target.value !== '__custom__') {
+                    setCustomMethodName('')
+                  }
+                }}
+                required={selectedMethodName !== '__custom__'}
+              >
+                <option value="" disabled>Selecione uma opcao...</option>
+                {PREDEFINED_METHODS.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+                <option value="__custom__">Outro (digitar nome)</option>
+              </Select>
+              {selectedMethodName === '__custom__' && (
+                <Input
+                  value={customMethodName}
+                  onChange={(e) => setCustomMethodName(e.target.value)}
+                  placeholder="Digite o nome da forma de entrega"
+                  required
+                  autoFocus
+                />
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
