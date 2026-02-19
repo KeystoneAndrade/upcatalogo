@@ -121,6 +121,9 @@ export default function CheckoutPage() {
     setSearchingCep(true)
     setSelectedMethod(null)
 
+    const settings = (tenant?.settings as any) || {}
+    let meMethods: any[] = []
+
     // 1. Buscar zonas manuais que cobrem este CEP
     const manualMethods: any[] = []
 
@@ -142,8 +145,6 @@ export default function CheckoutPage() {
     })
 
     // 2. Buscar opcoes Melhor Envio se habilitado
-    let meMethods: any[] = []
-    const settings = (tenant?.settings as any) || {}
 
     // Detect ME service IDs and legacy markers from matched zones
     const meServiceIds: number[] = []
