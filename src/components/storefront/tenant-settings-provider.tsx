@@ -7,6 +7,7 @@ interface TenantSettings {
   banners_per_view?: number // Deprecated, use desktop
   banners_per_view_desktop?: number
   banners_per_view_mobile?: number
+  melhor_envio_enabled?: boolean
 }
 
 const TenantSettingsContext = createContext<TenantSettings>({})

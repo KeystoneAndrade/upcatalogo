@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Plus, Pencil, Trash2, Loader2, MapPin, Package, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, MapPin, Package, X, Truck, Info } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/utils'
 
@@ -222,6 +222,19 @@ export default function ShippingPage() {
         <Button onClick={openNewZone}>
           <Plus className="mr-2 h-4 w-4" /> Nova Zona
         </Button>
+      </div>
+
+      <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+        <div className="text-sm text-blue-800">
+          <p className="font-medium flex items-center gap-1.5">
+            <Truck className="h-4 w-4" /> Integracao com Melhor Envio disponivel!
+          </p>
+          <p className="mt-1 text-blue-700">
+            Alem das zonas manuais abaixo, voce pode ativar o calculo automatico de frete via Correios, JadLog e outras transportadoras.
+            Configure em <a href="/dashboard/settings" className="underline font-medium">Configuracoes → Melhor Envio</a>.
+          </p>
+        </div>
       </div>
 
       {zones.length === 0 ? (

@@ -108,7 +108,7 @@ export default function CheckoutPage() {
     setAllShippingZones(szRes.data || [])
   }
 
-  function searchCep() {
+  async function searchCep() {
     const cepNorm = normalizeCep(cep)
     if (cepNorm.length !== 8) {
       toast.error('Digite um CEP valido com 8 digitos')
@@ -118,8 +118,8 @@ export default function CheckoutPage() {
     setSearchingCep(true)
     setSelectedMethod(null)
 
-    // Buscar zonas que cobrem este CEP
-    const methods: any[] = []
+    // 1. Buscar zonas manuais que cobrem este CEP
+    const manualMethods: any[] = []
 
     allShippingZones.forEach(zone => {
       const hasMatch = zone.shipping_zone_ranges?.some((range: any) => {
@@ -129,7 +129,7 @@ export default function CheckoutPage() {
       if (hasMatch) {
         zone.shipping_methods?.forEach((method: any) => {
           if (method.is_active) {
-            methods.push({
+            manualMethods.push({
               ...method,
               zone_name: zone.name
             })
@@ -138,12 +138,78 @@ export default function CheckoutPage() {
       }
     })
 
-    setMatchedMethods(methods)
+    // 2. Buscar opcoes Melhor Envio se habilitado
+    let meMethods: any[] = []
+    const settings = (tenant?.settings as any) || {}
+
+    if (settings.melhor_envio_enabled && tenant?.id) {
+      try {
+        const supabase = createClient()
+        const productIds = items.map(i => i.productId).filter(Boolean)
+        let productMap: Record<string, any> = {}
+
+        if (productIds.length > 0) {
+          const { data: products } = await supabase
+            .from('products')
+            .select('id, weight, height, width, length, price')
+            .in('id', productIds)
+          if (products) {
+            productMap = Object.fromEntries(products.map(p => [p.id, p]))
+          }
+        }
+
+        const meProducts = items.map(item => {
+          const prod = productMap[item.productId] || {}
+          return {
+            weight: prod.weight ?? settings.melhor_envio_default_weight ?? 0.3,
+            height: prod.height ?? settings.melhor_envio_default_height ?? 11,
+            width: prod.width ?? settings.melhor_envio_default_width ?? 11,
+            length: prod.length ?? settings.melhor_envio_default_length ?? 11,
+            quantity: item.quantity,
+            price: item.price,
+          }
+        })
+
+        const res = await fetch('/api/melhor-envio/calculate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tenant_id: tenant.id,
+            to_postal_code: cepNorm,
+            products: meProducts,
+          }),
+        })
+
+        if (res.ok) {
+          const services = await res.json()
+          if (Array.isArray(services)) {
+            meMethods = services.map((s: any) => ({
+              id: `me-${s.id}`,
+              name: `${s.company?.name || ''} - ${s.name || ''}`.trim(),
+              price: parseFloat(s.custom_price || s.price || 0),
+              delivery_time_min: s.delivery_time,
+              delivery_time_max: s.delivery_time,
+              free_shipping_threshold: null,
+              is_melhor_envio: true,
+              melhor_envio_service_id: s.id,
+              melhor_envio_service_name: `${s.company?.name || ''} ${s.name || ''}`.trim(),
+              melhor_envio_company_picture: s.company?.picture || null,
+            }))
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao consultar Melhor Envio:', err)
+      }
+    }
+
+    // 3. Merge: manual + ME
+    const allMethods = [...manualMethods, ...meMethods]
+    setMatchedMethods(allMethods)
     setCepSearched(true)
     setSearchingCep(false)
 
-    if (methods.length === 1) {
-      setSelectedMethod(methods[0])
+    if (allMethods.length === 1) {
+      setSelectedMethod(allMethods[0])
     }
   }
 
@@ -250,7 +316,9 @@ export default function CheckoutPage() {
     const discountAmount = getDiscountAmount()
     const orderTotal = Math.max(0, total() - discountAmount + shippingCost)
 
-    const orderData = {
+    const isMelhorEnvio = selectedMethod?.is_melhor_envio === true
+
+    const orderData: any = {
       tenant_id: tenant.id,
       customer_name: customerName,
       customer_phone: customerPhone,
@@ -277,11 +345,17 @@ export default function CheckoutPage() {
       })),
       payment_method: selectedPayment || 'Nao informado',
       shipping_method: selectedMethod?.name || 'Retirada',
-      shipping_zone_id: selectedMethod?.zone_id || null,
-      shipping_method_id: selectedMethod?.id || null,
+      shipping_zone_id: isMelhorEnvio ? null : (selectedMethod?.zone_id || null),
+      shipping_method_id: isMelhorEnvio ? null : (selectedMethod?.id || null),
       coupon_code: appliedCoupon ? appliedCoupon.code : null,
       discount: discountAmount,
       customer_notes: customerNotes || null,
+    }
+
+    // Add Melhor Envio data if applicable
+    if (isMelhorEnvio) {
+      orderData.melhor_envio_service_id = selectedMethod.melhor_envio_service_id
+      orderData.melhor_envio_service_name = selectedMethod.melhor_envio_service_name
     }
 
     const supabase = createClient()
@@ -465,12 +539,20 @@ _Pedido via UP Catalogo_`
                               onChange={() => setSelectedMethod(sm)}
                               className="text-green-600"
                             />
+                            {sm.melhor_envio_company_picture && (
+                              <img src={sm.melhor_envio_company_picture} alt="" className="h-6 w-6 object-contain" />
+                            )}
                             <div>
                               <p className="font-medium text-sm">{sm.name}</p>
-                              {sm.delivery_time_min && sm.delivery_time_max && (
+                              {sm.delivery_time_min != null && (
                                 <p className="text-xs text-muted-foreground">
-                                  {sm.delivery_time_min}-{sm.delivery_time_max} dias uteis
+                                  {sm.delivery_time_min === sm.delivery_time_max || !sm.delivery_time_max
+                                    ? `${sm.delivery_time_min} dias uteis`
+                                    : `${sm.delivery_time_min}-${sm.delivery_time_max} dias uteis`}
                                 </p>
+                              )}
+                              {sm.is_melhor_envio && (
+                                <p className="text-[10px] text-blue-500">via Melhor Envio</p>
                               )}
                             </div>
                           </div>

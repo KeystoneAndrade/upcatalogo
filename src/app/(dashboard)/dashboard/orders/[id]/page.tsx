@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import { OrderStatusUpdate } from '@/components/dashboard/orders/order-status-update'
 import { OrderHistoryList } from '@/components/dashboard/orders/order-history-list'
+import { MelhorEnvioActions } from '@/components/dashboard/orders/melhor-envio-actions'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { Pencil } from 'lucide-react'
@@ -151,6 +152,21 @@ export default async function OrderDetailPage({ params }: { params: { id: string
         {/* Right Column: Actions & History */}
         <div className="space-y-6">
           <OrderStatusUpdate orderId={order.id} currentStatus={order.status} tenantId={tenant!.id} />
+
+          {/* Melhor Envio Actions - show if ME service was selected */}
+          {(order.melhor_envio_service_id || order.melhor_envio_shipment_id) && (
+            <MelhorEnvioActions
+              orderId={order.id}
+              shipmentId={order.melhor_envio_shipment_id}
+              serviceId={order.melhor_envio_service_id}
+              serviceName={order.melhor_envio_service_name}
+              protocol={order.melhor_envio_protocol}
+              labelUrl={order.melhor_envio_label_url}
+              meStatus={order.melhor_envio_status}
+              trackingCode={order.tracking_code}
+            />
+          )}
+
           <OrderHistoryList orderId={order.id} />
         </div>
 

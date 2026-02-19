@@ -138,6 +138,10 @@ export interface Database {
           variants: Json
           meta_title: string | null
           meta_description: string | null
+          weight: number | null
+          height: number | null
+          width: number | null
+          length: number | null
           display_order: number
           created_at: string
           updated_at: string
@@ -164,6 +168,10 @@ export interface Database {
           variants?: Json
           meta_title?: string | null
           meta_description?: string | null
+          weight?: number | null
+          height?: number | null
+          width?: number | null
+          length?: number | null
           display_order?: number
           created_at?: string
           updated_at?: string
@@ -190,6 +198,10 @@ export interface Database {
           variants?: Json
           meta_title?: string | null
           meta_description?: string | null
+          weight?: number | null
+          height?: number | null
+          width?: number | null
+          length?: number | null
           display_order?: number
           created_at?: string
           updated_at?: string
@@ -315,6 +327,12 @@ export interface Database {
           customer_notes: string | null
           internal_notes: string | null
           tracking_code: string | null
+          melhor_envio_shipment_id: string | null
+          melhor_envio_service_id: number | null
+          melhor_envio_service_name: string | null
+          melhor_envio_protocol: string | null
+          melhor_envio_label_url: string | null
+          melhor_envio_status: string | null
           created_at: string
           updated_at: string
           confirmed_at: string | null
@@ -345,6 +363,12 @@ export interface Database {
           customer_notes?: string | null
           internal_notes?: string | null
           tracking_code?: string | null
+          melhor_envio_shipment_id?: string | null
+          melhor_envio_service_id?: number | null
+          melhor_envio_service_name?: string | null
+          melhor_envio_protocol?: string | null
+          melhor_envio_label_url?: string | null
+          melhor_envio_status?: string | null
           created_at?: string
           updated_at?: string
           confirmed_at?: string | null
@@ -375,6 +399,12 @@ export interface Database {
           customer_notes?: string | null
           internal_notes?: string | null
           tracking_code?: string | null
+          melhor_envio_shipment_id?: string | null
+          melhor_envio_service_id?: number | null
+          melhor_envio_service_name?: string | null
+          melhor_envio_protocol?: string | null
+          melhor_envio_label_url?: string | null
+          melhor_envio_status?: string | null
           created_at?: string
           updated_at?: string
           confirmed_at?: string | null

@@ -1,0 +1,57 @@
+import { createClient } from '@/lib/supabase/server'
+import { NextResponse } from 'next/server'
+import { cancelShipment, extractMeConfig } from '@/lib/melhor-envio'
+
+export async function POST(request: Request) {
+  try {
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const body = await request.json()
+    const { order_id, reason } = body
+
+    if (!order_id) {
+      return NextResponse.json({ error: 'Missing order_id' }, { status: 400 })
+    }
+
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('id, settings')
+      .eq('owner_id', session.user.id)
+      .single()
+
+    if (!tenant) return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
+
+    const meConfig = extractMeConfig(tenant.settings as any)
+    if (!meConfig) return NextResponse.json({ error: 'Melhor Envio not configured' }, { status: 400 })
+
+    const { data: order } = await supabase
+      .from('orders')
+      .select('melhor_envio_shipment_id')
+      .eq('id', order_id)
+      .eq('tenant_id', tenant.id)
+      .single()
+
+    if (!order?.melhor_envio_shipment_id) {
+      return NextResponse.json({ error: 'Shipment not found' }, { status: 400 })
+    }
+
+    const result = await cancelShipment(
+      meConfig,
+      order.melhor_envio_shipment_id,
+      reason || 'Pedido cancelado'
+    )
+
+    // Update order
+    await supabase.from('orders').update({
+      melhor_envio_status: 'cancelled',
+      melhor_envio_shipment_id: null,
+    }).eq('id', order_id)
+
+    return NextResponse.json(result)
+  } catch (error: any) {
+    console.error('ME cancel error:', error)
+    return NextResponse.json({ error: error.message || 'Error cancelling shipment' }, { status: 500 })
+  }
+}
