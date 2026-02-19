@@ -169,13 +169,18 @@ export default function CheckoutPage() {
     })
 
     const hasMeInZones = meServiceIds.length > 0 || hasLegacyMeMarker
-    const shouldUseMelhorEnvio = (settings.melhor_envio_enabled || hasMeInZones) && settings.melhor_envio_token && tenant?.id
+    const hasToken = !!settings.melhor_envio_token
+    const isGlobalEnabled = !!settings.melhor_envio_enabled
+    const shouldUseMelhorEnvio = (isGlobalEnabled || hasMeInZones) && hasToken && tenant?.id
 
-    console.log('[Frete] Busca CEP:', cepNorm)
-    console.log('[Frete] Metodos manuais encontrados:', manualMethods.length)
-    console.log('[Frete] Melhor Envio habilitado?', shouldUseMelhorEnvio)
-    console.log('[Frete] IDs de servico detectados nas zonas:', meServiceIds)
-    console.log('[Frete] Marcador legado detectado?', hasLegacyMeMarker)
+    console.log('[Frete] Depuracao Config:')
+    console.log(' - CEP:', cepNorm)
+    console.log(' - Global Enabled:', isGlobalEnabled)
+    console.log(' - Token Presente:', hasToken)
+    console.log(' - Servicos na Zona:', meServiceIds)
+    console.log(' - Marcador Legado:', hasLegacyMeMarker)
+    console.log(' - Tenant ID:', tenant?.id)
+    console.log(' - Resultado Final: shouldUseMelhorEnvio =', shouldUseMelhorEnvio)
 
     if (shouldUseMelhorEnvio) {
       try {
