@@ -482,30 +482,31 @@ export function VariantManager({ value, onChange, basePrice, manageStockGlobal, 
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <label className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer" title={item.is_active ? 'Ativo' : 'Inativo'}>
-                        <input
-                          type="checkbox"
-                          checked={item.is_active}
-                          onChange={(e) => updateVariantItem(item.id, 'is_active', e.target.checked)}
-                          className="rounded border-gray-300"
-                        />
-                        <span className="hidden sm:inline">Ativo</span>
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => removeVariantItem(item.id)}
-                        className="text-red-400 hover:text-red-600"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeVariantItem(item.id)}
+                      className="text-red-400 hover:text-red-600 flex-shrink-0"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
 
                   {/* Detalhes expandidos */}
                   {isExpanded && (
                     <div className="px-3 pb-3 pt-0 border-t mx-3 mt-0 space-y-3">
-                      <div className="grid grid-cols-4 gap-3 pt-3">
+                      <div className="flex items-center gap-2 pt-3">
+                        <label className="flex items-center gap-2 text-sm cursor-pointer flex-1">
+                          <input
+                            type="checkbox"
+                            checked={item.is_active}
+                            onChange={(e) => updateVariantItem(item.id, 'is_active', e.target.checked)}
+                            className="rounded border-gray-300"
+                          />
+                          <span>Ativo</span>
+                        </label>
+                      </div>
+
+                      <div className="grid grid-cols-4 gap-3 pt-2">
                         <div className="space-y-1">
                           <Label className="text-xs">Peso (kg)</Label>
                           <Input
