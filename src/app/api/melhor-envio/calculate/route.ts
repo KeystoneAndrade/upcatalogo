@@ -46,11 +46,19 @@ export async function POST(request: Request) {
       meConfig.services = service_ids
     }
 
+    console.log('[ME Calculate] Payload:', {
+      to_postal_code,
+      services: meConfig.services,
+      products_count: productDimensions.length
+    })
+
     const services = await calculateShipping(
       meConfig,
       to_postal_code.replace(/\D/g, ''),
       productDimensions
     )
+
+    console.log('[ME Calculate] Servicos retornados:', services.length)
 
     return NextResponse.json(services)
   } catch (error: any) {

@@ -141,6 +141,10 @@ export default function CheckoutPage() {
       }
     })
 
+    // 2. Buscar opcoes Melhor Envio se habilitado
+    let meMethods: any[] = []
+    const settings = (tenant?.settings as any) || {}
+
     // Detect ME service IDs and legacy markers from matched zones
     const meServiceIds: number[] = []
     let hasLegacyMeMarker = false
@@ -477,24 +481,30 @@ _Pedido via UP Catalogo_`
     setLoading(false)
   }
 
-  if (!mounted) return null
+  if (!mounted) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   if (items.length === 0) {
     return (
-      <div className="max-w-2xl mx-auto text-center py-12">
-        <ShoppingCart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-        <h1 className="text-2xl font-bold mb-2">Carrinho vazio</h1>
-        <p className="text-muted-foreground mb-4">
-          Adicione produtos para continuar
-        </p>
-        <Button onClick={() => router.push('/produtos')}>Ver produtos</Button>
+      <div className="container mx-auto px-4 py-12 text-center">
+        <ShoppingCart className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+        <h2 className="text-2xl font-bold mb-4">Seu carrinho esta vazio</h2>
+        <Button onClick={() => router.push('/')}>Voltar para a loja</Button>
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Finalizar Pedido</h1>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8 flex items-center gap-2">
+        <ShoppingCart className="h-8 w-8" />
+        Finalizar Compra
+      </h1>
 
       <div className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-2">

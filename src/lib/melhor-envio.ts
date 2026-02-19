@@ -39,7 +39,7 @@ export interface ProductDimensions {
 function getBaseUrl(sandbox: boolean) {
   return sandbox
     ? 'https://sandbox.melhorenvio.com.br'
-    : 'https://melhorenvio.com.br'
+    : 'https://www.melhorenvio.com.br'
 }
 
 function getHeaders(token: string) {
@@ -95,7 +95,7 @@ export async function calculateShipping(
       height: p.height,
       length: p.length,
       weight: p.weight,
-      insurance_value: p.price * p.quantity,
+      insurance_value: Math.max(0.01, p.price * p.quantity),
       quantity: p.quantity,
     })),
   }
@@ -104,6 +104,8 @@ export async function calculateShipping(
     method: 'POST',
     body: JSON.stringify(body),
   })
+
+  console.log('[ME Calculate] Bruto:', JSON.stringify(data, null, 2))
 
   // Filter out services with errors
   if (Array.isArray(data)) {
@@ -274,7 +276,7 @@ export async function cancelShipment(
 
 // Helper: extract ME config from tenant settings
 export function extractMeConfig(settings: any): MelhorEnvioConfig | null {
-  if (!settings?.melhor_envio_enabled || !settings?.melhor_envio_token) {
+  if (!settings?.melhor_envio_token) {
     return null
   }
 
