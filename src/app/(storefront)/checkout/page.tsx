@@ -416,13 +416,39 @@ export default function CheckoutPage() {
     const { data: order, error } = await supabase
       .from('pedidos')
       .insert(orderData)
-      .select('numero_pedido')
+      .select('id, numero_pedido')
       .single()
 
-    if (error) {
+    if (error || !order) {
       toast.error('Erro ao criar pedido')
       setLoading(false)
       return
+    }
+
+    // -------------------------------------------------------------
+    // ATUALIZAÇÃO SPRINT 1: Salvar itens na nova tabela normalizada
+    // -------------------------------------------------------------
+    const pedidoItensData = items.map(item => ({
+      loja_id: tenant.id,
+      pedido_id: order.id,
+      produto_id: item.productId,
+      variacao_id: null, // No momento o carrinho armazena apenas a string 'variant'. Na sprint 2 podemos migrar para buscar o UUID da variação exata.
+      name: item.name,
+      // sku: O carrinho não armazena sku no momento, pode vir depois
+      price_at_purchase: item.price,
+      quantity: item.quantity,
+      subtotal: item.price * item.quantity,
+      image_url: item.image,
+      attributes: item.variant ? { combination_string: item.variant } : {},
+    }))
+
+    const { error: itemsError } = await supabase
+      .from('pedido_itens')
+      .insert(pedidoItensData)
+
+    if (itemsError) {
+      console.error('Erro ao salvar os itens do pedido separadamente', itemsError)
+      // Não bloqueia o fluxo principal já que orderData tem o JSON items garantindo o app por enquanto
     }
 
     // Update coupon usage count

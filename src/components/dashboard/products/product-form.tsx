@@ -147,6 +147,7 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
     }
 
     const supabase = createClient()
+    let returningProductId = product?.id
 
     if (isEditing) {
       const { error } = await supabase
@@ -160,13 +161,74 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
       }
       toast.success('Produto atualizado!')
     } else {
-      const { error } = await supabase.from('produtos').insert(data)
+      const { data: insertedData, error } = await supabase
+        .from('produtos')
+        .insert(data)
+        .select('id')
+        .single()
       if (error) {
         toast.error('Erro ao criar produto: ' + error.message)
         setLoading(false)
         return
       }
+      returningProductId = insertedData.id
       toast.success('Produto criado!')
+    }
+
+    // -------------------------------------------------------------
+    // ATUALIZAÇÃO SPRINT 1: Salvar na tabela relacional 'produtos_variacoes'
+    // -------------------------------------------------------------
+    if (returningProductId) {
+      if (hasVariants && variantsData.items.length > 0) {
+        // Double-write / Upsert para a nova tabela
+        const variacoesRows = variantsData.items.map((item, index) => {
+          // Os ids nas variantes muitas vezes vem como crypto.randomUUID()
+          return {
+            id: item.id.length === 36 ? item.id : undefined,
+            loja_id: tenantId,
+            produto_id: returningProductId,
+            name: Object.values(item.combination).join(' / ') || name,
+            sku: item.sku || null,
+            price: item.price,
+            compare_at_price: item.compare_at_price || null,
+            stock_quantity: item.stock_quantity,
+            manage_stock: item.manage_stock,
+            image_url: item.image_url || null,
+            attributes: item.combination, // Salvar como object JSONB {"Cor": "Azul", "Tamanho": "M"}
+            is_active: item.is_active,
+            display_order: index,
+          }
+        })
+
+        const { error: variantsError } = await supabase
+          .from('produtos_variacoes')
+          .upsert(variacoesRows, { onConflict: 'id' })
+
+        if (variantsError) {
+          console.error('Erro ao salvar variacoes: ', variantsError)
+        }
+
+        // Deletar as variações que foram removidas da UI (Limpeza)
+        const keepIds = variacoesRows.map(r => r.id).filter(Boolean) as string[]
+        if (keepIds.length > 0) {
+          await supabase
+            .from('produtos_variacoes')
+            .delete()
+            .eq('produto_id', returningProductId)
+            .not('id', 'in', `(${keepIds.join(',')})`)
+        } else {
+          await supabase
+            .from('produtos_variacoes')
+            .delete()
+            .eq('produto_id', returningProductId)
+        }
+      } else {
+        // Se o produto deixou de ter variações, limpa tudo da tabela
+        await supabase
+          .from('produtos_variacoes')
+          .delete()
+          .eq('produto_id', returningProductId)
+      }
     }
 
     router.push('/dashboard/products')
@@ -195,7 +257,7 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
 
     // Clean up storage images (fire-and-forget)
     if (allImageUrls.length > 0) {
-      deleteProductImages(allImageUrls).catch(() => {})
+      deleteProductImages(allImageUrls).catch(() => { })
     }
 
     toast.success('Produto excluido!')
