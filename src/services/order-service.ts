@@ -1,16 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 
-export async function getOrders(supabase: SupabaseClient, loja_id: string) {
-    const { data, error } = await supabase
-        .from('pedidos')
-        .select('*')
-        .eq('loja_id', loja_id)
-        .order('created_at', { ascending: false })
-
-    if (error) throw error
-    return data
-}
-
 export async function getOrderById(supabase: SupabaseClient, loja_id: string, id: string) {
     const { data, error } = await supabase
         .from('pedidos')
