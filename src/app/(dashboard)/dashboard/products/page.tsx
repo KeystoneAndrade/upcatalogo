@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+import { getTenant } from '@/services/tenant-service'
+import { getProducts } from '@/services/product-service'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,18 +11,13 @@ import { formatCurrency } from '@/lib/utils'
 
 export default async function ProductsPage() {
   const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  const { data: tenant } = await supabase
-    .from('lojas')
-    .select('id')
-    .eq('proprietario_id', session!.user.id)
-    .single()
+  const tenant = await getTenant(supabase)
 
-  const { data: products } = await supabase
-    .from('produtos')
-    .select('*, categories(name)')
-    .eq('loja_id', tenant!.id)
-    .order('created_at', { ascending: false })
+  const products = await getProducts(supabase, {
+    loja_id: tenant.id,
+    is_active: undefined, // Trazer todos (ativos e inativos)
+    limit: 100
+  })
 
   return (
     <div className="space-y-6">

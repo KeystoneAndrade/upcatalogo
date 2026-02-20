@@ -54,3 +54,35 @@ export async function updateTenantSettings(supabase: SupabaseClient, id: string,
     return updateTenant(supabase, id, { settings })
 }
 
+export async function getShippingZones(supabase: SupabaseClient, loja_id: string, activeOnly = true) {
+    let query = supabase
+        .from('zonas_entrega')
+        .select('*')
+        .eq('loja_id', loja_id)
+        .order('display_order')
+
+    if (activeOnly) {
+        query = query.eq('is_active', true)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+}
+
+export async function getPaymentMethods(supabase: SupabaseClient, loja_id: string, activeOnly = true) {
+    let query = supabase
+        .from('metodos_pagamento')
+        .select('*')
+        .eq('loja_id', loja_id)
+        .order('display_order')
+
+    if (activeOnly) {
+        query = query.eq('is_active', true)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+}
+

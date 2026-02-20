@@ -1,5 +1,6 @@
 import { getTenant } from '@/lib/get-tenant'
 import { notFound } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
 import { getProductBySlug } from '@/services/product-service'
 import { formatCurrency, calculateDiscount } from '@/lib/utils'
 import { AddToCartButton } from '@/components/storefront/add-to-cart-button'
@@ -15,7 +16,8 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
   const tenant = await getTenant()
   if (!tenant) notFound()
 
-  const product = await getProductBySlug(tenant.id, params.slug)
+  const supabase = createClient()
+  const product = await getProductBySlug(supabase, tenant.id, params.slug)
 
   if (!product) notFound()
 

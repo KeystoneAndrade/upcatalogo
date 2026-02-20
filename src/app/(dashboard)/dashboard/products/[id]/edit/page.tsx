@@ -1,31 +1,18 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { ProductForm } from '@/components/dashboard/products/product-form'
+import { getTenant } from '@/services/tenant-service'
+import { getProductById } from '@/services/product-service'
+import { getCategories } from '@/services/category-service'
 
 export default async function EditProductPage({ params }: { params: { id: string } }) {
   const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  const { data: tenant } = await supabase
-    .from('lojas')
-    .select('id')
-    .eq('proprietario_id', session!.user.id)
-    .single()
+  const tenant = await getTenant(supabase)
 
-  const { data: product } = await supabase
-    .from('produtos')
-    .select('*, produtos_variacoes(*)')
-    .eq('id', params.id)
-    .eq('loja_id', tenant!.id)
-    .single()
-
+  const product = await getProductById(supabase, tenant.id, params.id)
   if (!product) notFound()
 
-  const { data: categories } = await supabase
-    .from('categorias')
-    .select('*')
-    .eq('loja_id', tenant!.id)
-    .eq('is_active', true)
-    .order('name')
+  const categories = await getCategories(supabase, tenant.id, true)
 
   return (
     <div className="space-y-6">

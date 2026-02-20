@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+import { getTenant } from '@/services/tenant-service'
+import { getOrderById } from '@/services/order-service'
 import { notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -21,19 +23,9 @@ const statusLabels: Record<string, string> = {
 
 export default async function OrderDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  const { data: tenant } = await supabase
-    .from('lojas')
-    .select('id')
-    .eq('proprietario_id', session!.user.id)
-    .single()
+  const tenant = await getTenant(supabase)
 
-  const { data: order } = await supabase
-    .from('pedidos')
-    .select('*, pedido_itens(*)')
-    .eq('id', params.id)
-    .eq('loja_id', tenant!.id)
-    .single()
+  const order = await getOrderById(supabase, tenant.id, params.id)
 
   if (!order) notFound()
 

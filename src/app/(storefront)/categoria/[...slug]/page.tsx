@@ -1,5 +1,6 @@
 import { getTenant } from '@/lib/get-tenant'
 import { notFound } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
 import { getCategories } from '@/services/category-service'
 import { getProducts } from '@/services/product-service'
 import { formatCurrency } from '@/lib/utils'
@@ -12,8 +13,9 @@ export default async function CategoryPage({ params }: { params: { slug: string[
   const tenant = await getTenant()
   if (!tenant) notFound()
 
+  const supabase = createClient()
   // Buscar todas as categorias ativas do tenant
-  const allCategories = await getCategories(tenant.id)
+  const allCategories = await getCategories(supabase, tenant.id)
 
   if (!allCategories) notFound()
 
@@ -29,7 +31,7 @@ export default async function CategoryPage({ params }: { params: { slug: string[
     .filter((c) => c.is_active)
 
   // Buscar produtos APENAS desta categoria específica (não das descendentes)
-  const products = await getProducts({
+  const products = await getProducts(supabase, {
     loja_id: tenant.id,
     categoria_id: currentCategory.id
   })

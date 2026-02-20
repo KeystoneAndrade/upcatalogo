@@ -1,5 +1,6 @@
 import { getTenant } from '@/lib/get-tenant'
 import { notFound } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
 import { getProducts } from '@/services/product-service'
 import { getCategories } from '@/services/category-service'
 import { ProductCard } from '@/components/storefront/product-card'
@@ -10,8 +11,9 @@ export async function ProductsList() {
   const tenant = await getTenant()
   if (!tenant) notFound()
 
-  const products = await getProducts({ loja_id: tenant.id })
-  const categories = await getCategories(tenant.id)
+  const supabase = createClient()
+  const products = await getProducts(supabase, { loja_id: tenant.id })
+  const categories = await getCategories(supabase, tenant.id)
 
   // Apenas categorias raiz (sem parent_id)
   const rootCategories = (categories || []).filter((cat) => !cat.parent_id)
