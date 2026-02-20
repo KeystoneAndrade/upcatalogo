@@ -14,6 +14,7 @@ import { Loader2, Plus, Trash2, Package } from 'lucide-react'
 import { toast } from 'sonner'
 import { logOrderHistory } from '@/lib/order-logger'
 import { ProductSearch } from './product-search'
+import { createOrder, updateOrder } from '@/services/order-service'
 
 interface OrderFormProps {
     tenantId: string
@@ -145,35 +146,7 @@ export function OrderForm({ tenantId, order, shippingZones, paymentMethods }: Or
                 // Only works for products with manage_stock = true
                 // Real implementation requires fetching current products to check manage_stock flag
 
-
-                // 1. Update Order
-                const { data: updatedOrder, error } = await supabase
-                    .from('pedidos')
-                    .update(orderData)
-                    .eq('id', order.id)
-                    .select()
-                    .single()
-
-                if (error) throw error
-
-                // 2. Update Items (Delete and Re-insert for simplicity in manual editing)
-                await supabase.from('pedido_itens').delete().eq('pedido_id', order.id)
-
-                const itemsToInsert = items.map(item => ({
-                    loja_id: tenantId,
-                    pedido_id: order.id,
-                    produto_id: item.product_id,
-                    variacao_id: item.variacao_id || null,
-                    name: item.name,
-                    price_at_purchase: item.price,
-                    quantity: item.quantity,
-                    subtotal: item.price * item.quantity,
-                    image_url: item.image_url || null,
-                    attributes: item.attributes || (item.variant ? { combination_string: item.variant } : {})
-                }))
-
-                const { error: itemsError } = await supabase.from('pedido_itens').insert(itemsToInsert)
-                if (itemsError) throw itemsError
+                await updateOrder(supabase, tenantId, order.id, orderData, items)
 
                 await logOrderHistory(
                     tenantId,
@@ -185,35 +158,7 @@ export function OrderForm({ tenantId, order, shippingZones, paymentMethods }: Or
                 )
 
             } else {
-                // Create
-                const { data: newOrder, error } = await supabase
-                    .from('pedidos')
-                    .insert({
-                        ...orderData,
-                        numero_pedido: Math.floor(100000 + Math.random() * 900000).toString(),
-                        created_at: new Date().toISOString()
-                    })
-                    .select()
-                    .single()
-
-                if (error) throw error
-
-                // Insert Items
-                const itemsToInsert = items.map(item => ({
-                    loja_id: tenantId,
-                    pedido_id: newOrder.id,
-                    produto_id: item.product_id,
-                    variacao_id: item.variacao_id || null,
-                    name: item.name,
-                    price_at_purchase: item.price,
-                    quantity: item.quantity,
-                    subtotal: item.price * item.quantity,
-                    image_url: item.image_url || null,
-                    attributes: item.attributes || (item.variant ? { combination_string: item.variant } : {})
-                }))
-
-                const { error: itemsError } = await supabase.from('pedido_itens').insert(itemsToInsert)
-                if (itemsError) throw itemsError
+                const newOrder = await createOrder(supabase, tenantId, orderData, items)
 
                 await logOrderHistory(
                     tenantId,

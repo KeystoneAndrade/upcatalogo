@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { searchProducts } from '@/services/product-service'
 import { Input } from '@/components/ui/input'
 import { Loader2, Search, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -21,7 +22,7 @@ export function ProductSearch({ onSelect, tenantId }: ProductSearchProps) {
     useEffect(() => {
         const timer = setTimeout(() => {
             if (query.length > 2) {
-                searchProducts()
+                handleSearch()
             } else {
                 setResults([])
             }
@@ -30,19 +31,18 @@ export function ProductSearch({ onSelect, tenantId }: ProductSearchProps) {
         return () => clearTimeout(timer)
     }, [query])
 
-    async function searchProducts() {
+    async function handleSearch() {
         setLoading(true)
         const supabase = createClient()
-        const { data } = await supabase
-            .from('produtos')
-            .select('*')
-            .eq('loja_id', tenantId)
-            .ilike('name', `%${query}%`)
-            .limit(10)
-
-        if (data) setResults(data)
-        setLoading(false)
-        setShowResults(true)
+        try {
+            const data = await searchProducts(supabase, tenantId, query)
+            setResults(data)
+            setShowResults(true)
+        } catch (err) {
+            console.error(err)
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (

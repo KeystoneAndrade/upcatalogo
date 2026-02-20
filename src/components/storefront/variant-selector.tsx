@@ -156,6 +156,8 @@ export function VariantSelector({ product }: VariantSelectorProps) {
 
     addItem({
       productId: product.id,
+      variacaoId: selectedVariant.id,
+      sku: selectedVariant.sku || null,
       name: product.name,
       price: selectedVariant.price,
       image: selectedVariant.image_url || product.image_url,
@@ -166,6 +168,7 @@ export function VariantSelector({ product }: VariantSelectorProps) {
       height: selectedVariant.height ?? null,
       width: selectedVariant.width ?? null,
       length: selectedVariant.length ?? null,
+      attributes: selectedVariant.combination,
     })
     toast.success('Adicionado ao carrinho!')
     if (settings.open_cart_on_add) {

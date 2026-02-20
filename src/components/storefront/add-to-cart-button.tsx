@@ -14,6 +14,7 @@ export function AddToCartButton({ product }: { product: any }) {
   function handleAdd() {
     addItem({
       productId: product.id,
+      sku: product.sku || null,
       name: product.name,
       price: product.price,
       image: product.image_url,

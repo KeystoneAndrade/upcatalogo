@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { getTenant, updateTenant } from '@/services/tenant-service'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -24,16 +25,18 @@ export default function SettingsPage() {
   }, [])
 
   async function loadTenant() {
-    const { data: { session } } = await supabase.auth.getSession()
-    const { data } = await supabase
-      .from('lojas')
-      .select('*')
-      .eq('proprietario_id', session!.user.id)
-      .single()
-    setTenant(data)
-    const settings = (data?.settings as any) || {}
-    setOpenCartOnAdd(!!settings.open_cart_on_add)
-    setLoading(false)
+    const supabase = createClient()
+    try {
+      const data = await getTenant(supabase)
+      setTenant(data)
+      const settings = (data?.settings as any) || {}
+      setOpenCartOnAdd(!!settings.open_cart_on_add)
+    } catch (err) {
+      console.error(err)
+      toast.error('Erro ao carregar configurações')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -43,32 +46,31 @@ export default function SettingsPage() {
 
     const currentSettings = (tenant?.settings as any) || {}
 
-    const { error } = await supabase
-      .from('lojas')
-      .update({
-        name: formData.get('name') as string,
-        whatsapp: formData.get('whatsapp') as string || null,
-        email: formData.get('email') as string || null,
-        instagram: formData.get('instagram') as string || null,
-        primary_color: formData.get('primary_color') as string,
-        secondary_color: formData.get('secondary_color') as string,
-        logo_url: formData.get('logo_url') as string || null,
-        meta_title: formData.get('meta_title') as string || null,
-        meta_description: formData.get('meta_description') as string || null,
-        settings: {
-          ...currentSettings,
-          open_cart_on_add: openCartOnAdd,
-        },
-      })
-      .eq('id', tenant.id)
+    const data = {
+      name: formData.get('name') as string,
+      whatsapp: formData.get('whatsapp') as string || null,
+      email: formData.get('email') as string || null,
+      instagram: formData.get('instagram') as string || null,
+      primary_color: formData.get('primary_color') as string,
+      secondary_color: formData.get('secondary_color') as string,
+      logo_url: formData.get('logo_url') as string || null,
+      meta_title: formData.get('meta_title') as string || null,
+      meta_description: formData.get('meta_description') as string || null,
+      settings: {
+        ...currentSettings,
+        open_cart_on_add: openCartOnAdd,
+      },
+    }
 
-    if (error) {
-      toast.error('Erro ao salvar')
-    } else {
+    try {
+      await updateTenant(supabase, tenant.id, data)
       toast.success('Configuracoes salvas!')
       router.refresh()
+    } catch (err) {
+      toast.error('Erro ao salvar')
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   if (loading) return <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin" /></div>

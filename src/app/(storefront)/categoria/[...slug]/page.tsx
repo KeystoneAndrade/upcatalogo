@@ -1,6 +1,7 @@
 import { getTenant } from '@/lib/get-tenant'
-import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
+import { getCategories } from '@/services/category-service'
+import { getProducts } from '@/services/product-service'
 import { formatCurrency } from '@/lib/utils'
 import { resolveSlugPath, getCategoryPath, getDirectChildren, getAllDescendantIds } from '@/lib/categories'
 import { ProductCard } from '@/components/storefront/product-card'
@@ -11,15 +12,8 @@ export default async function CategoryPage({ params }: { params: { slug: string[
   const tenant = await getTenant()
   if (!tenant) notFound()
 
-  const supabase = createClient()
-
   // Buscar todas as categorias ativas do tenant
-  const { data: allCategories } = await supabase
-    .from('categorias')
-    .select('*')
-    .eq('loja_id', tenant.id)
-    .eq('is_active', true)
-    .order('display_order')
+  const allCategories = await getCategories(tenant.id)
 
   if (!allCategories) notFound()
 
@@ -35,13 +29,10 @@ export default async function CategoryPage({ params }: { params: { slug: string[
     .filter((c) => c.is_active)
 
   // Buscar produtos APENAS desta categoria específica (não das descendentes)
-  const { data: products } = await supabase
-    .from('produtos')
-    .select('*, produtos_variacoes(*)')
-    .eq('loja_id', tenant.id)
-    .eq('is_active', true)
-    .eq('categoria_id', currentCategory.id)
-    .order('display_order')
+  const products = await getProducts({
+    loja_id: tenant.id,
+    categoria_id: currentCategory.id
+  })
 
   return (
     <div className="space-y-6">

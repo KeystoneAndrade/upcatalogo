@@ -1,6 +1,7 @@
 import { getTenant } from '@/lib/get-tenant'
-import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
+import { getProducts } from '@/services/product-service'
+import { getCategories } from '@/services/category-service'
 import { ProductCard } from '@/components/storefront/product-card'
 import Link from 'next/link'
 import { FolderOpen } from 'lucide-react'
@@ -9,20 +10,8 @@ export async function ProductsList() {
   const tenant = await getTenant()
   if (!tenant) notFound()
 
-  const supabase = createClient()
-  const { data: products } = await supabase
-    .from('produtos')
-    .select('*, produtos_variacoes(*)')
-    .eq('loja_id', tenant.id)
-    .eq('is_active', true)
-    .order('display_order')
-
-  const { data: categories } = await supabase
-    .from('categorias')
-    .select('*')
-    .eq('loja_id', tenant.id)
-    .eq('is_active', true)
-    .order('display_order')
+  const products = await getProducts({ loja_id: tenant.id })
+  const categories = await getCategories(tenant.id)
 
   // Apenas categorias raiz (sem parent_id)
   const rootCategories = (categories || []).filter((cat) => !cat.parent_id)

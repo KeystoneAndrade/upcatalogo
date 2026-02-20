@@ -6,6 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button'
 import { Eye, Plus } from 'lucide-react'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
+import { getOrders } from '@/services/order-service'
+import { getTenant } from '@/services/tenant-service'
 
 const statusLabels: Record<string, string> = {
   pending: 'Pendente',
@@ -25,20 +27,11 @@ const statusVariants: Record<string, 'default' | 'secondary' | 'destructive' | '
   cancelled: 'destructive',
 }
 
+
 export default async function OrdersPage() {
   const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  const { data: tenant } = await supabase
-    .from('lojas')
-    .select('id')
-    .eq('proprietario_id', session!.user.id)
-    .single()
-
-  const { data: orders } = await supabase
-    .from('pedidos')
-    .select('*')
-    .eq('loja_id', tenant!.id)
-    .order('created_at', { ascending: false })
+  const tenant = await getTenant(supabase)
+  const orders = await getOrders(supabase, tenant.id)
 
   return (
     <div className="space-y-6">

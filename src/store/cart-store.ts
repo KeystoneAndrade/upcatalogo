@@ -4,6 +4,8 @@ import { toast } from 'sonner'
 
 export interface CartItem {
   productId: string
+  variacaoId?: string | null
+  sku?: string | null
   name: string
   price: number
   quantity: number
@@ -15,6 +17,7 @@ export interface CartItem {
   height?: number | null
   width?: number | null
   length?: number | null
+  attributes?: any
 }
 
 interface CartStore {

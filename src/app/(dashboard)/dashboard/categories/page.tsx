@@ -13,6 +13,8 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Plus, Pencil, Trash2, Loader2, ChevronRight, FolderOpen, Folder } from 'lucide-react'
 import { toast } from 'sonner'
+import { getCategories, saveCategory, deleteCategory } from '@/services/category-service'
+import { getTenant } from '@/services/tenant-service'
 
 function CategoryTreeItem({
   node,
@@ -89,21 +91,19 @@ export default function CategoriesPage() {
   }, [])
 
   async function loadData() {
-    const { data: { session } } = await supabase.auth.getSession()
-    const { data: tenant } = await supabase
-      .from('lojas')
-      .select('id')
-      .eq('proprietario_id', session!.user.id)
-      .single()
-    setTenantId(tenant!.id)
+    const supabase = createClient()
+    try {
+      const tenant = await getTenant(supabase)
+      setTenantId(tenant.id)
 
-    const { data } = await supabase
-      .from('categorias')
-      .select('*')
-      .eq('loja_id', tenant!.id)
-      .order('display_order')
-    setCategories(data || [])
-    setLoading(false)
+      const data = await getCategories(supabase, tenant.id, false)
+      setCategories(data)
+    } catch (err) {
+      console.error(err)
+      toast.error('Erro ao carregar categorias')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
@@ -122,33 +122,39 @@ export default function CategoriesPage() {
       is_active: isActive,
     }
 
-    if (editingCategory) {
-      if (parentId === editingCategory.id) {
-        toast.error('Uma categoria nao pode ser pai de si mesma')
-        setSaving(false)
-        return
+    try {
+      if (editingCategory) {
+        if (parentId === editingCategory.id) {
+          toast.error('Uma categoria nao pode ser pai de si mesma')
+          setSaving(false)
+          return
+        }
+        await saveCategory(supabase, tenantId, data, editingCategory.id)
+        toast.success('Categoria atualizada!')
+      } else {
+        await saveCategory(supabase, tenantId, data)
+        toast.success('Categoria criada!')
       }
-      const { error } = await supabase.from('categorias').update(data).eq('id', editingCategory.id)
-      if (error) { toast.error('Erro ao atualizar'); setSaving(false); return }
-      toast.success('Categoria atualizada!')
-    } else {
-      const { error } = await supabase.from('categorias').insert(data)
-      if (error) { toast.error('Erro ao criar: ' + error.message); setSaving(false); return }
-      toast.success('Categoria criada!')
-    }
 
-    setDialogOpen(false)
-    setEditingCategory(null)
-    setSaving(false)
-    loadData()
+      setDialogOpen(false)
+      setEditingCategory(null)
+      loadData()
+    } catch (err: any) {
+      toast.error('Erro ao salvar: ' + err.message)
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleDelete(id: string) {
     if (!confirm('Excluir categoria? Subcategorias ficarao sem pai.')) return
-    const { error } = await supabase.from('categorias').delete().eq('id', id)
-    if (error) { toast.error('Erro ao excluir'); return }
-    toast.success('Categoria excluida!')
-    loadData()
+    try {
+      await deleteCategory(supabase, tenantId, id)
+      toast.success('Categoria excluida!')
+      loadData()
+    } catch (err) {
+      toast.error('Erro ao excluir')
+    }
   }
 
   function openEdit(cat: any) {
