@@ -33,9 +33,20 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
     ? calculateDiscount(product.compare_at_price, product.price)
     : 0
 
-  const images = [product.image_url, ...((product.images as string[]) || [])].filter(Boolean)
-
   const productHasVariants = hasVariants(product)
+
+  // Coletar imagens das variacoes (sem duplicar)
+  const variantImages = productHasVariants
+    ? (product.variants.items as any[])
+        .map((v: any) => v.image_url)
+        .filter(Boolean)
+    : []
+
+  const images = [...new Set([
+    product.image_url,
+    ...((product.images as string[]) || []),
+    ...variantImages,
+  ])].filter(Boolean) as string[]
 
   return (
     <div className="max-w-4xl mx-auto">
