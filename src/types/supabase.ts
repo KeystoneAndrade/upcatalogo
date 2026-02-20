@@ -338,6 +338,86 @@ export type Database = {
           },
         ]
       }
+      pedido_itens: {
+        Row: {
+          attributes: Json | null
+          created_at: string | null
+          id: string
+          image_url: string | null
+          loja_id: string
+          name: string
+          pedido_id: string
+          price_at_purchase: number
+          produto_id: string | null
+          quantity: number
+          sku: string | null
+          subtotal: number
+          updated_at: string | null
+          variacao_id: string | null
+        }
+        Insert: {
+          attributes?: Json | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          loja_id: string
+          name: string
+          pedido_id: string
+          price_at_purchase: number
+          produto_id?: string | null
+          quantity: number
+          sku?: string | null
+          subtotal: number
+          updated_at?: string | null
+          variacao_id?: string | null
+        }
+        Update: {
+          attributes?: Json | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          loja_id?: string
+          name?: string
+          pedido_id?: string
+          price_at_purchase?: number
+          produto_id?: string | null
+          quantity?: number
+          sku?: string | null
+          subtotal?: number
+          updated_at?: string | null
+          variacao_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedido_itens_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedido_itens_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedido_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedido_itens_variacao_id_fkey"
+            columns: ["variacao_id"]
+            isOneToOne: false
+            referencedRelation: "produtos_variacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pedidos: {
         Row: {
           address: Json
@@ -575,6 +655,75 @@ export type Database = {
             columns: ["loja_id"]
             isOneToOne: false
             referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produtos_variacoes: {
+        Row: {
+          attributes: Json | null
+          compare_at_price: number | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          loja_id: string
+          manage_stock: boolean | null
+          name: string
+          price: number
+          produto_id: string
+          sku: string | null
+          stock_quantity: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          attributes?: Json | null
+          compare_at_price?: number | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          loja_id: string
+          manage_stock?: boolean | null
+          name: string
+          price: number
+          produto_id: string
+          sku?: string | null
+          stock_quantity?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          attributes?: Json | null
+          compare_at_price?: number | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          loja_id?: string
+          manage_stock?: boolean | null
+          name?: string
+          price?: number
+          produto_id?: string
+          sku?: string | null
+          stock_quantity?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produtos_variacoes_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produtos_variacoes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
             referencedColumns: ["id"]
           },
         ]
