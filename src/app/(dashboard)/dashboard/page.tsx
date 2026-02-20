@@ -8,17 +8,17 @@ export default async function DashboardPage() {
 
   const { data: { session } } = await supabase.auth.getSession()
   const { data: tenant } = await supabase
-    .from('tenants')
+    .from('lojas')
     .select('id')
-    .eq('owner_id', session!.user.id)
+    .eq('proprietario_id', session!.user.id)
     .single()
 
   const tenantId = tenant!.id
 
   const [productsRes, ordersRes, revenueRes] = await Promise.all([
-    supabase.from('products').select('id', { count: 'exact' }).eq('tenant_id', tenantId),
-    supabase.from('orders').select('id', { count: 'exact' }).eq('tenant_id', tenantId),
-    supabase.from('orders').select('total').eq('tenant_id', tenantId).eq('status', 'delivered'),
+    supabase.from('produtos').select('id', { count: 'exact' }).eq('loja_id', tenantId),
+    supabase.from('pedidos').select('id', { count: 'exact' }).eq('loja_id', tenantId),
+    supabase.from('pedidos').select('total').eq('loja_id', tenantId).eq('status', 'delivered'),
   ])
 
   const totalProducts = productsRes.count || 0
@@ -26,9 +26,9 @@ export default async function DashboardPage() {
   const totalRevenue = (revenueRes.data || []).reduce((acc, o) => acc + Number(o.total), 0)
 
   const { data: recentOrders } = await supabase
-    .from('orders')
+    .from('pedidos')
     .select('*')
-    .eq('tenant_id', tenantId)
+    .eq('loja_id', tenantId)
     .order('created_at', { ascending: false })
     .limit(5)
 
@@ -87,7 +87,7 @@ export default async function DashboardPage() {
               {recentOrders.map((order) => (
                 <div key={order.id} className="flex items-center justify-between border-b pb-3 last:border-0">
                   <div>
-                    <p className="font-medium">#{order.order_number}</p>
+                    <p className="font-medium">#{order.numero_pedido}</p>
                     <p className="text-sm text-muted-foreground">{order.customer_name}</p>
                   </div>
                   <div className="text-right">

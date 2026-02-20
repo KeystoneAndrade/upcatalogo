@@ -70,7 +70,7 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
     const formData = new FormData(e.currentTarget)
     const name = formData.get('name') as string
     const description = formData.get('description') as string
-    const categoryId = formData.get('category_id') as string
+    const categoryId = formData.get('categoria_id') as string
     const isActive = formData.get('is_active') === 'on'
     const featured = formData.get('featured') === 'on'
 
@@ -125,13 +125,13 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
     }
 
     const data = {
-      tenant_id: tenantId,
+      loja_id: tenantId,
       name,
       slug: slugify(name),
       description: description || null,
       price: finalPrice,
       compare_at_price: finalCompareAtPrice,
-      category_id: categoryId || null,
+      categoria_id: categoryId || null,
       sku: finalSku,
       stock_quantity: finalStockQuantity,
       manage_stock: finalManageStock,
@@ -150,7 +150,7 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
 
     if (isEditing) {
       const { error } = await supabase
-        .from('products')
+        .from('produtos')
         .update(data)
         .eq('id', product.id)
       if (error) {
@@ -160,7 +160,7 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
       }
       toast.success('Produto atualizado!')
     } else {
-      const { error } = await supabase.from('products').insert(data)
+      const { error } = await supabase.from('produtos').insert(data)
       if (error) {
         toast.error('Erro ao criar produto: ' + error.message)
         setLoading(false)
@@ -186,7 +186,7 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
     }
 
     const supabase = createClient()
-    const { error } = await supabase.from('products').delete().eq('id', product.id)
+    const { error } = await supabase.from('produtos').delete().eq('id', product.id)
     if (error) {
       toast.error('Erro ao excluir produto')
       setDeleting(false)
@@ -361,8 +361,8 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="category_id">Categoria</Label>
-            <Select id="category_id" name="category_id" defaultValue={product?.category_id || ''}>
+            <Label htmlFor="categoria_id">Categoria</Label>
+            <Select id="categoria_id" name="categoria_id" defaultValue={product?.categoria_id || ''}>
               <option value="">Sem categoria</option>
               {flatCategories.map((cat) => (
                 <option key={cat.id} value={cat.id}>

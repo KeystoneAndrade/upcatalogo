@@ -86,13 +86,13 @@ export default function ShippingPage() {
 
   async function loadData() {
     const { data: { session } } = await supabase.auth.getSession()
-    const { data: tenant } = await supabase.from('tenants').select('id').eq('owner_id', session!.user.id).single()
+    const { data: tenant } = await supabase.from('lojas').select('id').eq('proprietario_id', session!.user.id).single()
     setTenantId(tenant!.id)
 
     const { data } = await supabase
-      .from('shipping_zones')
+      .from('zonas_entrega')
       .select('*, shipping_zone_ranges(*), shipping_methods(*)')
-      .eq('tenant_id', tenant!.id)
+      .eq('loja_id', tenant!.id)
       .order('display_order')
 
     setZones(data || [])
@@ -169,7 +169,7 @@ export default function ShippingPage() {
     }
 
     const zoneData: any = {
-      tenant_id: tenantId,
+      loja_id: tenantId,
       name: zoneName,
       price: 0,
       is_active: true,
@@ -178,13 +178,13 @@ export default function ShippingPage() {
     let zoneId: string
 
     if (editingZone?.id) {
-      const { error } = await supabase.from('shipping_zones').update(zoneData).eq('id', editingZone.id)
+      const { error } = await supabase.from('zonas_entrega').update(zoneData).eq('id', editingZone.id)
       if (error) { toast.error('Erro ao atualizar zona'); setSavingZone(false); return }
       zoneId = editingZone.id
       // Delete old ranges and reinsert
       await supabase.from('shipping_zone_ranges').delete().eq('zone_id', zoneId)
     } else {
-      const { data, error } = await supabase.from('shipping_zones').insert(zoneData).select('id').single()
+      const { data, error } = await supabase.from('zonas_entrega').insert(zoneData).select('id').single()
       if (error || !data) { toast.error('Erro ao criar zona: ' + (error?.message || '')); setSavingZone(false); return }
       zoneId = data.id
     }
@@ -206,7 +206,7 @@ export default function ShippingPage() {
 
   async function handleDeleteZone(id: string) {
     if (!confirm('Excluir zona de entrega e todas as formas de entrega associadas?')) return
-    await supabase.from('shipping_zones').delete().eq('id', id)
+    await supabase.from('zonas_entrega').delete().eq('id', id)
     toast.success('Zona excluida!')
     loadData()
   }

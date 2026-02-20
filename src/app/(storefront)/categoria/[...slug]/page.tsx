@@ -15,9 +15,9 @@ export default async function CategoryPage({ params }: { params: { slug: string[
 
   // Buscar todas as categorias ativas do tenant
   const { data: allCategories } = await supabase
-    .from('categories')
+    .from('categorias')
     .select('*')
-    .eq('tenant_id', tenant.id)
+    .eq('loja_id', tenant.id)
     .eq('is_active', true)
     .order('display_order')
 
@@ -36,11 +36,11 @@ export default async function CategoryPage({ params }: { params: { slug: string[
 
   // Buscar produtos APENAS desta categoria específica (não das descendentes)
   const { data: products } = await supabase
-    .from('products')
+    .from('produtos')
     .select('*')
-    .eq('tenant_id', tenant.id)
+    .eq('loja_id', tenant.id)
     .eq('is_active', true)
-    .eq('category_id', currentCategory.id)
+    .eq('categoria_id', currentCategory.id)
     .order('display_order')
 
   return (

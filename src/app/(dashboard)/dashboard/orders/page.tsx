@@ -29,15 +29,15 @@ export default async function OrdersPage() {
   const supabase = createClient()
   const { data: { session } } = await supabase.auth.getSession()
   const { data: tenant } = await supabase
-    .from('tenants')
+    .from('lojas')
     .select('id')
-    .eq('owner_id', session!.user.id)
+    .eq('proprietario_id', session!.user.id)
     .single()
 
   const { data: orders } = await supabase
-    .from('orders')
+    .from('pedidos')
     .select('*')
-    .eq('tenant_id', tenant!.id)
+    .eq('loja_id', tenant!.id)
     .order('created_at', { ascending: false })
 
   return (
@@ -72,7 +72,7 @@ export default async function OrdersPage() {
               <TableBody>
                 {orders.map((order) => (
                   <TableRow key={order.id}>
-                    <TableCell className="font-medium">#{order.order_number}</TableCell>
+                    <TableCell className="font-medium">#{order.numero_pedido}</TableCell>
                     <TableCell>
                       <div>
                         <p>{order.customer_name}</p>

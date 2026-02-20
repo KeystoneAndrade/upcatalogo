@@ -16,7 +16,7 @@ export async function getTenant() {
 
     // Query by subdomain
     const { data, error } = await supabase
-      .from('tenants')
+      .from('lojas')
       .select('*')
       .eq('subdomain', tenantSubdomain)
       .eq('status', 'active')

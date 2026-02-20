@@ -17,9 +17,9 @@ export async function POST(request: Request) {
 
     // Fetch tenant
     const { data: tenant } = await supabase
-      .from('tenants')
+      .from('lojas')
       .select('id, name, settings')
-      .eq('owner_id', session.user.id)
+      .eq('proprietario_id', session.user.id)
       .single()
 
     if (!tenant) return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
@@ -52,10 +52,10 @@ export async function POST(request: Request) {
 
     // Fetch order
     const { data: order } = await supabase
-      .from('orders')
+      .from('pedidos')
       .select('*')
       .eq('id', order_id)
-      .eq('tenant_id', tenant.id)
+      .eq('loja_id', tenant.id)
       .single()
 
     if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
 
     if (productIds.length > 0) {
       const { data: products } = await supabase
-        .from('products')
+        .from('produtos')
         .select('id, weight, height, width, length')
         .in('id', productIds)
 
@@ -143,7 +143,7 @@ export async function POST(request: Request) {
     // Update order with shipment ID
     const shipmentId = result.id || result.order_id
     if (shipmentId) {
-      await supabase.from('orders').update({
+      await supabase.from('pedidos').update({
         melhor_envio_shipment_id: shipmentId,
         melhor_envio_status: 'pending',
       }).eq('id', order_id)

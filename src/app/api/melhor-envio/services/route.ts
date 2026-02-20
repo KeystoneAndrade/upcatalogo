@@ -9,9 +9,9 @@ export async function GET() {
         if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
         const { data: tenant } = await supabase
-            .from('tenants')
+            .from('lojas')
             .select('id, settings')
-            .eq('owner_id', session.user.id)
+            .eq('proprietario_id', session.user.id)
             .single()
 
         if (!tenant) return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })

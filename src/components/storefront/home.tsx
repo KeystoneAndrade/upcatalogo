@@ -13,7 +13,7 @@ export async function StorefrontHome({ tenantId }: StorefrontHomeProps) {
   const { data: banners } = await supabase
     .from('banners')
     .select('id, title, description, image_url, link_url, open_in_new_tab')
-    .eq('tenant_id', tenantId)
+    .eq('loja_id', tenantId)
     .eq('is_active', true)
     .order('display_order')
 

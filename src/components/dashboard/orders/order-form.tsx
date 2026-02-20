@@ -112,7 +112,7 @@ export function OrderForm({ tenantId, order, shippingZones, paymentMethods }: Or
         const { data: { session } } = await supabase.auth.getSession()
 
         const orderData = {
-            tenant_id: tenantId,
+            loja_id: tenantId,
             customer_name: customerName,
             customer_phone: customerPhone,
             customer_email: customerEmail,
@@ -136,7 +136,7 @@ export function OrderForm({ tenantId, order, shippingZones, paymentMethods }: Or
 
                 // 1. Update Order
                 const { error } = await supabase
-                    .from('orders')
+                    .from('pedidos')
                     .update(orderData)
                     .eq('id', order.id)
 
@@ -158,10 +158,10 @@ export function OrderForm({ tenantId, order, shippingZones, paymentMethods }: Or
             } else {
                 // Create
                 const { data: newOrder, error } = await supabase
-                    .from('orders')
+                    .from('pedidos')
                     .insert({
                         ...orderData,
-                        order_number: Math.floor(100000 + Math.random() * 900000).toString(), // Temporary random number
+                        numero_pedido: Math.floor(100000 + Math.random() * 900000).toString(), // Temporary random number
                         created_at: new Date().toISOString()
                     })
                     .select()

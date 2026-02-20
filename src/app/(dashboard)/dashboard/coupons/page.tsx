@@ -28,13 +28,13 @@ export default function CouponsPage() {
 
     async function loadData() {
         const { data: { session } } = await supabase.auth.getSession()
-        const { data: tenant } = await supabase.from('tenants').select('id').eq('owner_id', session!.user.id).single()
+        const { data: tenant } = await supabase.from('lojas').select('id').eq('proprietario_id', session!.user.id).single()
         setTenantId(tenant!.id)
 
         const { data } = await supabase
             .from('coupons')
             .select('*')
-            .eq('tenant_id', tenant!.id)
+            .eq('loja_id', tenant!.id)
             .order('created_at', { ascending: false })
 
         setCoupons(data || [])
@@ -66,7 +66,7 @@ export default function CouponsPage() {
         }
 
         const couponData: any = {
-            tenant_id: tenantId,
+            loja_id: tenantId,
             code: code,
             discount_type: formData.get('discount_type') as string,
             discount_value: parseFloat(formData.get('discount_value') as string),

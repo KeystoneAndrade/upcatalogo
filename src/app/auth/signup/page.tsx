@@ -48,11 +48,11 @@ export default function SignupPage() {
 
     // 2. Create tenant
     const subdomain = slugify(storeName)
-    const { error: tenantError } = await supabase.from('tenants').insert({
+    const { error: tenantError } = await supabase.from('lojas').insert({
       name: storeName,
       subdomain,
       slug: subdomain,
-      owner_id: authData.user.id,
+      proprietario_id: authData.user.id,
       whatsapp: whatsapp || null,
     })
 

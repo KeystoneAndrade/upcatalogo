@@ -20,9 +20,9 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
 
   const supabase = createClient()
   const { data: product } = await supabase
-    .from('products')
+    .from('produtos')
     .select('*')
-    .eq('tenant_id', tenant.id)
+    .eq('loja_id', tenant.id)
     .eq('slug', params.slug)
     .eq('is_active', true)
     .single()

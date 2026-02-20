@@ -26,9 +26,9 @@ export default function SettingsPage() {
   async function loadTenant() {
     const { data: { session } } = await supabase.auth.getSession()
     const { data } = await supabase
-      .from('tenants')
+      .from('lojas')
       .select('*')
-      .eq('owner_id', session!.user.id)
+      .eq('proprietario_id', session!.user.id)
       .single()
     setTenant(data)
     const settings = (data?.settings as any) || {}
@@ -44,7 +44,7 @@ export default function SettingsPage() {
     const currentSettings = (tenant?.settings as any) || {}
 
     const { error } = await supabase
-      .from('tenants')
+      .from('lojas')
       .update({
         name: formData.get('name') as string,
         whatsapp: formData.get('whatsapp') as string || null,

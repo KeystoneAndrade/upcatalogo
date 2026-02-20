@@ -91,16 +91,16 @@ export default function CategoriesPage() {
   async function loadData() {
     const { data: { session } } = await supabase.auth.getSession()
     const { data: tenant } = await supabase
-      .from('tenants')
+      .from('lojas')
       .select('id')
-      .eq('owner_id', session!.user.id)
+      .eq('proprietario_id', session!.user.id)
       .single()
     setTenantId(tenant!.id)
 
     const { data } = await supabase
-      .from('categories')
+      .from('categorias')
       .select('*')
-      .eq('tenant_id', tenant!.id)
+      .eq('loja_id', tenant!.id)
       .order('display_order')
     setCategories(data || [])
     setLoading(false)
@@ -115,7 +115,7 @@ export default function CategoriesPage() {
     const isActive = formData.get('is_active') === 'on'
 
     const data: any = {
-      tenant_id: tenantId,
+      loja_id: tenantId,
       name,
       slug: slugify(name),
       parent_id: parentId || null,
@@ -128,11 +128,11 @@ export default function CategoriesPage() {
         setSaving(false)
         return
       }
-      const { error } = await supabase.from('categories').update(data).eq('id', editingCategory.id)
+      const { error } = await supabase.from('categorias').update(data).eq('id', editingCategory.id)
       if (error) { toast.error('Erro ao atualizar'); setSaving(false); return }
       toast.success('Categoria atualizada!')
     } else {
-      const { error } = await supabase.from('categories').insert(data)
+      const { error } = await supabase.from('categorias').insert(data)
       if (error) { toast.error('Erro ao criar: ' + error.message); setSaving(false); return }
       toast.success('Categoria criada!')
     }
@@ -145,7 +145,7 @@ export default function CategoriesPage() {
 
   async function handleDelete(id: string) {
     if (!confirm('Excluir categoria? Subcategorias ficarao sem pai.')) return
-    const { error } = await supabase.from('categories').delete().eq('id', id)
+    const { error } = await supabase.from('categorias').delete().eq('id', id)
     if (error) { toast.error('Erro ao excluir'); return }
     toast.success('Categoria excluida!')
     loadData()

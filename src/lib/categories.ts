@@ -1,6 +1,6 @@
 export interface CategoryNode {
   id: string
-  tenant_id: string
+  loja_id: string
   name: string
   slug: string
   description: string | null

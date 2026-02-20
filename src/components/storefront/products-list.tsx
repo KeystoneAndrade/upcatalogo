@@ -11,16 +11,16 @@ export async function ProductsList() {
 
   const supabase = createClient()
   const { data: products } = await supabase
-    .from('products')
+    .from('produtos')
     .select('*')
-    .eq('tenant_id', tenant.id)
+    .eq('loja_id', tenant.id)
     .eq('is_active', true)
     .order('display_order')
 
   const { data: categories } = await supabase
-    .from('categories')
+    .from('categorias')
     .select('*')
-    .eq('tenant_id', tenant.id)
+    .eq('loja_id', tenant.id)
     .eq('is_active', true)
     .order('display_order')
 

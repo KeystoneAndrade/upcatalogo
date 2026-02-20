@@ -23,16 +23,16 @@ export default async function OrderDetailPage({ params }: { params: { id: string
   const supabase = createClient()
   const { data: { session } } = await supabase.auth.getSession()
   const { data: tenant } = await supabase
-    .from('tenants')
+    .from('lojas')
     .select('id')
-    .eq('owner_id', session!.user.id)
+    .eq('proprietario_id', session!.user.id)
     .single()
 
   const { data: order } = await supabase
-    .from('orders')
+    .from('pedidos')
     .select('*')
     .eq('id', params.id)
-    .eq('tenant_id', tenant!.id)
+    .eq('loja_id', tenant!.id)
     .single()
 
   if (!order) notFound()
@@ -43,7 +43,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Pedido #{order.order_number}</h1>
+        <h1 className="text-2xl font-bold">Pedido #{order.numero_pedido}</h1>
         <div className="flex items-center gap-2">
           {order.status !== 'cancelled' && (
             <Link href={`/dashboard/orders/${order.id}/edit`}>

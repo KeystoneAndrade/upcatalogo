@@ -62,9 +62,9 @@ export default function BannersPage() {
   async function loadBanners() {
     const { data: { session } } = await supabase.auth.getSession()
     const { data: tenant } = await supabase
-      .from('tenants')
+      .from('lojas')
       .select('id, settings')
-      .eq('owner_id', session!.user.id)
+      .eq('proprietario_id', session!.user.id)
       .single()
 
     if (!tenant) {
@@ -80,7 +80,7 @@ export default function BannersPage() {
     const { data } = await supabase
       .from('banners')
       .select('*')
-      .eq('tenant_id', tenant.id)
+      .eq('loja_id', tenant.id)
       .order('display_order')
 
     setBanners(data || [])
@@ -92,7 +92,7 @@ export default function BannersPage() {
     const currentSettings = (tenant?.settings as any) || {}
 
     const { error } = await supabase
-      .from('tenants')
+      .from('lojas')
       .update({
         settings: {
           ...currentSettings,
@@ -155,9 +155,9 @@ export default function BannersPage() {
 
     const { data: { session } } = await supabase.auth.getSession()
     const { data: tenant } = await supabase
-      .from('tenants')
+      .from('lojas')
       .select('id, settings')
-      .eq('owner_id', session!.user.id)
+      .eq('proprietario_id', session!.user.id)
       .single()
 
     if (!tenant) {
@@ -184,7 +184,7 @@ export default function BannersPage() {
         .from('banners')
         .insert({
           ...formData,
-          tenant_id: tenant.id,
+          loja_id: tenant.id,
         })
 
       if (error) {

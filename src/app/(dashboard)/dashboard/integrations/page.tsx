@@ -54,9 +54,9 @@ export default function IntegrationsPage() {
   async function loadTenant() {
     const { data: { session } } = await supabase.auth.getSession()
     const { data } = await supabase
-      .from('tenants')
+      .from('lojas')
       .select('*')
-      .eq('owner_id', session!.user.id)
+      .eq('proprietario_id', session!.user.id)
       .single()
     setTenant(data)
     const settings = (data?.settings as any) || {}
@@ -113,7 +113,7 @@ export default function IntegrationsPage() {
     const cepOrigem = selectedAddr?.postal_code?.replace(/\D/g, '') || currentSettings.melhor_envio_cep_origem || ''
 
     const { error } = await supabase
-      .from('tenants')
+      .from('lojas')
       .update({
         settings: {
           ...currentSettings,

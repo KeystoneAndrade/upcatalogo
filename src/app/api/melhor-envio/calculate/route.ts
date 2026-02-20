@@ -5,9 +5,9 @@ import { calculateShipping, extractMeConfig, type ProductDimensions } from '@/li
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { tenant_id, to_postal_code, products, service_ids } = body
+    const { loja_id, to_postal_code, products, service_ids } = body
 
-    if (!tenant_id || !to_postal_code || !products?.length) {
+    if (!loja_id || !to_postal_code || !products?.length) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
@@ -15,9 +15,9 @@ export async function POST(request: Request) {
 
     // Fetch tenant settings
     const { data: tenant } = await supabase
-      .from('tenants')
+      .from('lojas')
       .select('settings')
-      .eq('id', tenant_id)
+      .eq('id', loja_id)
       .single()
 
     if (!tenant) {

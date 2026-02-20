@@ -35,7 +35,7 @@ export function OrderStatusUpdate({ orderId, currentStatus, tenantId }: { orderI
       if (!item.product_id) continue
 
       const { data: product } = await supabase
-        .from('products')
+        .from('produtos')
         .select('id, name, stock_quantity, manage_stock')
         .eq('id', item.product_id)
         .single()
@@ -46,7 +46,7 @@ export function OrderStatusUpdate({ orderId, currentStatus, tenantId }: { orderI
       const newStock = Math.max(0, product.stock_quantity + delta)
 
       await supabase
-        .from('products')
+        .from('produtos')
         .update({ stock_quantity: newStock })
         .eq('id', product.id)
 
@@ -67,7 +67,7 @@ export function OrderStatusUpdate({ orderId, currentStatus, tenantId }: { orderI
 
     // Fetch order items for stock adjustment
     const { data: order } = await supabase
-      .from('orders')
+      .from('pedidos')
       .select('items')
       .eq('id', orderId)
       .single()
@@ -80,7 +80,7 @@ export function OrderStatusUpdate({ orderId, currentStatus, tenantId }: { orderI
     if (status === 'delivered') updateData.delivered_at = new Date().toISOString()
     if (status === 'cancelled') updateData.cancelled_at = new Date().toISOString()
 
-    const { error } = await supabase.from('orders').update(updateData).eq('id', orderId)
+    const { error } = await supabase.from('pedidos').update(updateData).eq('id', orderId)
 
     if (error) {
       toast.error('Erro ao atualizar status')

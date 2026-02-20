@@ -6,22 +6,22 @@ export default async function NewOrderPage() {
     const { data: { session } } = await supabase.auth.getSession()
 
     const { data: tenant } = await supabase
-        .from('tenants')
+        .from('lojas')
         .select('id')
-        .eq('owner_id', session!.user.id)
+        .eq('proprietario_id', session!.user.id)
         .single()
 
     const { data: shippingZones } = await supabase
-        .from('shipping_zones')
+        .from('zonas_entrega')
         .select('*')
-        .eq('tenant_id', tenant!.id)
+        .eq('loja_id', tenant!.id)
         .eq('is_active', true)
         .order('display_order')
 
     const { data: paymentMethods } = await supabase
-        .from('payment_methods')
+        .from('metodos_pagamento')
         .select('*')
-        .eq('tenant_id', tenant!.id)
+        .eq('loja_id', tenant!.id)
         .eq('is_active', true)
         .order('display_order')
 

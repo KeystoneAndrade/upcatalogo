@@ -7,9 +7,9 @@ export async function POST(request: Request) {
     const supabase = createClient()
 
     const { data, error } = await supabase
-      .from('orders')
+      .from('pedidos')
       .insert(body)
-      .select('id, order_number')
+      .select('id, numero_pedido')
       .single()
 
     if (error) {

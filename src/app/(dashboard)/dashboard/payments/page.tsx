@@ -34,9 +34,9 @@ export default function PaymentsPage() {
 
   async function loadData() {
     const { data: { session } } = await supabase.auth.getSession()
-    const { data: tenant } = await supabase.from('tenants').select('id').eq('owner_id', session!.user.id).single()
+    const { data: tenant } = await supabase.from('lojas').select('id').eq('proprietario_id', session!.user.id).single()
     setTenantId(tenant!.id)
-    const { data } = await supabase.from('payment_methods').select('*').eq('tenant_id', tenant!.id).order('display_order')
+    const { data } = await supabase.from('metodos_pagamento').select('*').eq('loja_id', tenant!.id).order('display_order')
     setMethods(data || [])
     setLoading(false)
   }
@@ -46,7 +46,7 @@ export default function PaymentsPage() {
     setSaving(true)
     const formData = new FormData(e.currentTarget)
     const data = {
-      tenant_id: tenantId,
+      loja_id: tenantId,
       name: formData.get('name') as string,
       type: formData.get('type') as string,
       instructions: formData.get('instructions') as string || null,
@@ -54,11 +54,11 @@ export default function PaymentsPage() {
     }
 
     if (editing) {
-      const { error } = await supabase.from('payment_methods').update(data).eq('id', editing.id)
+      const { error } = await supabase.from('metodos_pagamento').update(data).eq('id', editing.id)
       if (error) { toast.error('Erro'); setSaving(false); return }
       toast.success('Atualizado!')
     } else {
-      const { error } = await supabase.from('payment_methods').insert(data)
+      const { error } = await supabase.from('metodos_pagamento').insert(data)
       if (error) { toast.error('Erro: ' + error.message); setSaving(false); return }
       toast.success('Criado!')
     }
@@ -67,7 +67,7 @@ export default function PaymentsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm('Excluir?')) return
-    await supabase.from('payment_methods').delete().eq('id', id)
+    await supabase.from('metodos_pagamento').delete().eq('id', id)
     toast.success('Excluido!'); loadData()
   }
 

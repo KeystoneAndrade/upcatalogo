@@ -12,7 +12,7 @@ export async function logOrderHistory(
     const supabase = createClient()
 
     await supabase.from('order_history').insert({
-        tenant_id: tenantId,
+        loja_id: tenantId,
         order_id: orderId,
         user_id: userId,
         type,

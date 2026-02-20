@@ -34,9 +34,9 @@ export function ProductSearch({ onSelect, tenantId }: ProductSearchProps) {
         setLoading(true)
         const supabase = createClient()
         const { data } = await supabase
-            .from('products')
+            .from('produtos')
             .select('*')
-            .eq('tenant_id', tenantId)
+            .eq('loja_id', tenantId)
             .ilike('name', `%${query}%`)
             .limit(10)
 

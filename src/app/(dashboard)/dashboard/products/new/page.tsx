@@ -5,15 +5,15 @@ export default async function NewProductPage() {
   const supabase = createClient()
   const { data: { session } } = await supabase.auth.getSession()
   const { data: tenant } = await supabase
-    .from('tenants')
+    .from('lojas')
     .select('id')
-    .eq('owner_id', session!.user.id)
+    .eq('proprietario_id', session!.user.id)
     .single()
 
   const { data: categories } = await supabase
-    .from('categories')
+    .from('categorias')
     .select('*')
-    .eq('tenant_id', tenant!.id)
+    .eq('loja_id', tenant!.id)
     .eq('is_active', true)
     .order('name')
 

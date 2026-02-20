@@ -21,9 +21,9 @@ export default async function OrderConfirmationPage({
 }) {
   const supabase = createClient()
   const { data: order } = await supabase
-    .from('orders')
+    .from('pedidos')
     .select('*')
-    .eq('order_number', params.id)
+    .eq('numero_pedido', params.id)
     .single()
 
   if (!order) notFound()
@@ -36,7 +36,7 @@ export default async function OrderConfirmationPage({
         <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
         <h1 className="text-3xl font-bold">Pedido Confirmado!</h1>
         <p className="text-muted-foreground mt-2">
-          Pedido #{order.order_number}
+          Pedido #{order.numero_pedido}
         </p>
       </div>
 

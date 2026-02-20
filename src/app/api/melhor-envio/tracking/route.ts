@@ -16,9 +16,9 @@ export async function GET(request: Request) {
     }
 
     const { data: tenant } = await supabase
-      .from('tenants')
+      .from('lojas')
       .select('id, settings')
-      .eq('owner_id', session.user.id)
+      .eq('proprietario_id', session.user.id)
       .single()
 
     if (!tenant) return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
@@ -27,10 +27,10 @@ export async function GET(request: Request) {
     if (!meConfig) return NextResponse.json({ error: 'Melhor Envio not configured' }, { status: 400 })
 
     const { data: order } = await supabase
-      .from('orders')
+      .from('pedidos')
       .select('melhor_envio_shipment_id')
       .eq('id', orderId)
-      .eq('tenant_id', tenant.id)
+      .eq('loja_id', tenant.id)
       .single()
 
     if (!order?.melhor_envio_shipment_id) {
@@ -44,7 +44,7 @@ export async function GET(request: Request) {
 
     // Update tracking code if available
     if (trackingInfo?.tracking) {
-      await supabase.from('orders').update({
+      await supabase.from('pedidos').update({
         tracking_code: trackingInfo.tracking,
         melhor_envio_status: trackingInfo.status || 'posted',
       }).eq('id', orderId)

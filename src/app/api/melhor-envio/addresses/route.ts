@@ -10,9 +10,9 @@ export async function GET() {
 
     // Fetch tenant
     const { data: tenant } = await supabase
-      .from('tenants')
+      .from('lojas')
       .select('id, settings')
-      .eq('owner_id', session.user.id)
+      .eq('proprietario_id', session.user.id)
       .single()
 
     if (!tenant) return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })

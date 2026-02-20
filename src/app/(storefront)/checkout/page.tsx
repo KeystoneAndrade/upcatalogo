@@ -69,7 +69,7 @@ export default function CheckoutPage() {
     if (hostname.endsWith(`.${appDomain}`)) {
       const subdomain = hostname.replace(`.${appDomain}`, '')
       const { data } = await supabase
-        .from('tenants')
+        .from('lojas')
         .select('*')
         .eq('subdomain', subdomain)
         .eq('status', 'active')
@@ -77,7 +77,7 @@ export default function CheckoutPage() {
       tenantData = data
     } else if (hostname !== 'localhost' && hostname !== appDomain) {
       const { data } = await supabase
-        .from('tenants')
+        .from('lojas')
         .select('*')
         .eq('custom_domain', hostname)
         .eq('status', 'active')
@@ -90,15 +90,15 @@ export default function CheckoutPage() {
 
     const [pmRes, szRes] = await Promise.all([
       supabase
-        .from('payment_methods')
+        .from('metodos_pagamento')
         .select('*')
-        .eq('tenant_id', tenantData.id)
+        .eq('loja_id', tenantData.id)
         .eq('is_active', true)
         .order('display_order'),
       supabase
-        .from('shipping_zones')
+        .from('zonas_entrega')
         .select('*, shipping_zone_ranges(*), shipping_methods(*)')
-        .eq('tenant_id', tenantData.id)
+        .eq('loja_id', tenantData.id)
         .eq('is_active', true)
         .order('display_order'),
     ])
@@ -178,7 +178,7 @@ export default function CheckoutPage() {
 
         if (productIds.length > 0) {
           const { data: products } = await supabase
-            .from('products')
+            .from('produtos')
             .select('id, weight, height, width, length, price')
             .in('id', productIds)
           if (products) {
@@ -203,7 +203,7 @@ export default function CheckoutPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            tenant_id: tenant.id,
+            loja_id: tenant.id,
             to_postal_code: cepNorm,
             products: meProducts,
             service_ids: hasMeInZones ? meServiceIds : undefined,
@@ -292,7 +292,7 @@ export default function CheckoutPage() {
     const { data: coupons, error } = await supabase
       .from('coupons')
       .select('*')
-      .eq('tenant_id', tenant.id)
+      .eq('loja_id', tenant.id)
       .eq('code', couponCode.toUpperCase())
       .eq('is_active', true)
       .single() // Expecting unique code per tenant
@@ -369,7 +369,7 @@ export default function CheckoutPage() {
     const isMelhorEnvio = selectedMethod?.is_melhor_envio === true
 
     const orderData: any = {
-      tenant_id: tenant.id,
+      loja_id: tenant.id,
       customer_name: customerName,
       customer_phone: customerPhone,
       customer_email: customerEmail || null,
@@ -399,7 +399,7 @@ export default function CheckoutPage() {
       })),
       payment_method: selectedPayment || 'Nao informado',
       shipping_method: selectedMethod?.name || 'Retirada',
-      shipping_zone_id: isMelhorEnvio ? null : (selectedMethod?.zone_id || null),
+      zona_entrega_id: isMelhorEnvio ? null : (selectedMethod?.zone_id || null),
       shipping_method_id: isMelhorEnvio ? null : (selectedMethod?.id || null),
       coupon_code: appliedCoupon ? appliedCoupon.code : null,
       discount: discountAmount,
@@ -414,9 +414,9 @@ export default function CheckoutPage() {
 
     const supabase = createClient()
     const { data: order, error } = await supabase
-      .from('orders')
+      .from('pedidos')
       .insert(orderData)
-      .select('order_number')
+      .select('numero_pedido')
       .single()
 
     if (error) {
@@ -448,7 +448,7 @@ export default function CheckoutPage() {
 
     const message = `Ola! Gostaria de fazer um pedido:
 
-*Pedido #${order.order_number}*
+*Pedido #${order.numero_pedido}*
 
 *Produtos:*
 ${itemsList}

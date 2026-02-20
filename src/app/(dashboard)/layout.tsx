@@ -12,9 +12,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   const { data: tenant } = await supabase
-    .from('tenants')
+    .from('lojas')
     .select('*')
-    .eq('owner_id', session.user.id)
+    .eq('proprietario_id', session.user.id)
     .single()
 
   if (!tenant) {
