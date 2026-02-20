@@ -532,9 +532,9 @@ export function VariantManager({ value, onChange, basePrice, manageStockGlobal, 
       : null
     const priceRange = active.length > 0
       ? {
-          min: Math.min(...active.map(i => i.price)),
-          max: Math.max(...active.map(i => i.price)),
-        }
+        min: Math.min(...active.map(i => i.price)),
+        max: Math.max(...active.map(i => i.price)),
+      }
       : null
 
     return { active: active.length, inactive: inactive.length, totalStock, priceRange }
@@ -736,21 +736,24 @@ export function VariantManager({ value, onChange, basePrice, manageStockGlobal, 
             <Badge variant="secondary" className="gap-1">
               {stats.active} {stats.active === 1 ? 'ativa' : 'ativas'}
             </Badge>
-            {stats.inactive > 0 && (
-              <Badge variant="outline" className="gap-1 text-muted-foreground">
+            {stats.active === 0 && (
+              <Badge variant="destructive" className="gap-1 animate-pulse">
                 <EyeOff className="h-3 w-3" />
-                {stats.inactive} {stats.inactive === 1 ? 'oculta' : 'ocultas'}
+                Nenhuma variacao ativa
               </Badge>
             )}
-            {stats.priceRange && (
-              <Badge variant="outline" className="gap-1">
-                <DollarSign className="h-3 w-3" />
-                {stats.priceRange.min === stats.priceRange.max
-                  ? formatPrice(stats.priceRange.min)
-                  : `${formatPrice(stats.priceRange.min)} - ${formatPrice(stats.priceRange.max)}`
-                }
-              </Badge>
-            )}
+            {stats.inactive > 0 && (
+              {
+                stats.priceRange && (
+                  <Badge variant="outline" className="gap-1">
+                    <DollarSign className="h-3 w-3" />
+                    {stats.priceRange.min === stats.priceRange.max
+                      ? formatPrice(stats.priceRange.min)
+                      : `${formatPrice(stats.priceRange.min)} - ${formatPrice(stats.priceRange.max)}`
+                    }
+                  </Badge>
+                )
+              }
             {stats.totalStock !== null && (
               <Badge variant="outline" className="gap-1">
                 <Archive className="h-3 w-3" />
@@ -814,7 +817,7 @@ export function VariantManager({ value, onChange, basePrice, manageStockGlobal, 
                         className="h-12 w-12 object-cover rounded-md border"
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.display = 'none'
-                          ;(e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden')
+                            ; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden')
                         }}
                       />
                     ) : (

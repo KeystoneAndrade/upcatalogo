@@ -74,9 +74,16 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
     let finalLength: number | null = null
 
     if (hasVariants && variantsData.items.length > 0) {
+      // Validacao: deve ter ao menos uma variacao ativa
+      const activeItems = variantsData.items.filter(i => i.is_active)
+      if (activeItems.length === 0) {
+        toast.error('Produtos variáveis devem ter ao menos uma variação ativa (visível).')
+        setLoading(false)
+        return
+      }
+
       // Produto variavel: preco = menor das variacoes ativas
       variants = variantsData
-      const activeItems = variantsData.items.filter(i => i.is_active)
       finalPrice = activeItems.length > 0
         ? Math.min(...activeItems.map(i => i.price))
         : parseFloat(formData.get('price') as string) || 0
