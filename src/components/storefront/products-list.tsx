@@ -12,7 +12,7 @@ export async function ProductsList() {
   const supabase = createClient()
   const { data: products } = await supabase
     .from('produtos')
-    .select('*')
+    .select('*, produtos_variacoes(*)')
     .eq('loja_id', tenant.id)
     .eq('is_active', true)
     .order('display_order')

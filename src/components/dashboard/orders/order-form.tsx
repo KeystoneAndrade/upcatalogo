@@ -35,7 +35,19 @@ export function OrderForm({ tenantId, order, shippingZones, paymentMethods }: Or
         street: '', number: '', complement: '', neighborhood: '', city: '', state: '', zipcode: ''
     })
 
-    const [items, setItems] = useState<any[]>(order?.items || [])
+    const [items, setItems] = useState<any[]>(
+        order?.pedido_itens?.map((item: any) => ({
+            id: item.id,
+            product_id: item.produto_id,
+            variacao_id: item.variacao_id,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price_at_purchase,
+            image_url: item.image_url,
+            variant: item.attributes?.combination_string || (item.attributes ? Object.entries(item.attributes).map(([k, v]) => `${k}: ${v}`).join(' / ') : null),
+            attributes: item.attributes || {}
+        })) || []
+    )
     const [subtotal, setSubtotal] = useState(order?.subtotal || 0)
     const [shippingMethod, setShippingMethod] = useState(order?.shipping_method || 'Retirada')
     const [shippingCost, setShippingCost] = useState(order?.shipping_cost || 0)
@@ -117,7 +129,6 @@ export function OrderForm({ tenantId, order, shippingZones, paymentMethods }: Or
             customer_phone: customerPhone,
             customer_email: customerEmail,
             address,
-            items,
             subtotal,
             shipping_cost: shippingCost,
             discount,
@@ -134,13 +145,35 @@ export function OrderForm({ tenantId, order, shippingZones, paymentMethods }: Or
                 // Only works for products with manage_stock = true
                 // Real implementation requires fetching current products to check manage_stock flag
 
+
                 // 1. Update Order
-                const { error } = await supabase
+                const { data: updatedOrder, error } = await supabase
                     .from('pedidos')
                     .update(orderData)
                     .eq('id', order.id)
+                    .select()
+                    .single()
 
                 if (error) throw error
+
+                // 2. Update Items (Delete and Re-insert for simplicity in manual editing)
+                await supabase.from('pedido_itens').delete().eq('pedido_id', order.id)
+
+                const itemsToInsert = items.map(item => ({
+                    loja_id: tenantId,
+                    pedido_id: order.id,
+                    produto_id: item.product_id,
+                    variacao_id: item.variacao_id || null,
+                    name: item.name,
+                    price_at_purchase: item.price,
+                    quantity: item.quantity,
+                    subtotal: item.price * item.quantity,
+                    image_url: item.image_url || null,
+                    attributes: item.attributes || (item.variant ? { combination_string: item.variant } : {})
+                }))
+
+                const { error: itemsError } = await supabase.from('pedido_itens').insert(itemsToInsert)
+                if (itemsError) throw itemsError
 
                 await logOrderHistory(
                     tenantId,
@@ -151,23 +184,36 @@ export function OrderForm({ tenantId, order, shippingZones, paymentMethods }: Or
                     { changes: 'Updated via dashboard' }
                 )
 
-                // TODO: Update Stock Logic here (Complex: need to fetch old items + current product stocks)
-                // For this MVP, we are logging the change but stock sync is manual or complex
-                // We will log a warning if stock changes are needed
-
             } else {
                 // Create
                 const { data: newOrder, error } = await supabase
                     .from('pedidos')
                     .insert({
                         ...orderData,
-                        numero_pedido: Math.floor(100000 + Math.random() * 900000).toString(), // Temporary random number
+                        numero_pedido: Math.floor(100000 + Math.random() * 900000).toString(),
                         created_at: new Date().toISOString()
                     })
                     .select()
                     .single()
 
                 if (error) throw error
+
+                // Insert Items
+                const itemsToInsert = items.map(item => ({
+                    loja_id: tenantId,
+                    pedido_id: newOrder.id,
+                    produto_id: item.product_id,
+                    variacao_id: item.variacao_id || null,
+                    name: item.name,
+                    price_at_purchase: item.price,
+                    quantity: item.quantity,
+                    subtotal: item.price * item.quantity,
+                    image_url: item.image_url || null,
+                    attributes: item.attributes || (item.variant ? { combination_string: item.variant } : {})
+                }))
+
+                const { error: itemsError } = await supabase.from('pedido_itens').insert(itemsToInsert)
+                if (itemsError) throw itemsError
 
                 await logOrderHistory(
                     tenantId,

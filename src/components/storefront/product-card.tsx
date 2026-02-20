@@ -21,21 +21,20 @@ interface ProductCardProps {
     is_active: boolean
     stock_quantity: number
     manage_stock: boolean
-    variants?: any
+    produtos_variacoes?: any[]
   }
 }
 
-function productHasVariants(variants: any): boolean {
-  if (!variants) return false
-  if (Array.isArray(variants) && variants.length === 0) return false
-  return !!(variants.attributes && Array.isArray(variants.attributes) && variants.attributes.length > 0 && variants.items?.length > 0)
+function productHasVariants(variacoes: any[] | undefined): boolean {
+  if (!variacoes) return false
+  return Array.isArray(variacoes) && variacoes.length > 0
 }
 
 export function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((s) => s.addItem)
   const openMiniCart = useCartStore((s) => s.openMiniCart)
   const settings = useTenantSettings()
-  const hasVariants = productHasVariants(product.variants)
+  const hasVariants = productHasVariants(product.produtos_variacoes)
   const discount = product.compare_at_price
     ? calculateDiscount(product.compare_at_price, product.price)
     : 0

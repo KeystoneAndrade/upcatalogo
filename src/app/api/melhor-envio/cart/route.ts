@@ -50,10 +50,10 @@ export async function POST(request: Request) {
       }, { status: 400 })
     }
 
-    // Fetch order
+    // Fetch order with items
     const { data: order } = await supabase
       .from('pedidos')
-      .select('*')
+      .select('*, pedido_itens(*)')
       .eq('id', order_id)
       .eq('loja_id', tenant.id)
       .single()
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
 
     const address = order.address as any
-    const items = (order.items as any[]) || []
+    const items = (order.pedido_itens as any[]) || []
 
     // Fetch product dimensions for weight/dimensions
     const productIds = items.map((i: any) => i.product_id).filter(Boolean)
@@ -127,7 +127,7 @@ export async function POST(request: Request) {
       products: items.map((item: any) => ({
         name: item.name,
         quantity: item.quantity,
-        unitary_value: item.price,
+        unitary_value: item.price_at_purchase,
       })),
       volumes,
       options: {

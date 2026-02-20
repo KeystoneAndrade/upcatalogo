@@ -14,7 +14,7 @@ export default async function EditOrderPage({ params }: { params: { id: string }
 
     const { data: order } = await supabase
         .from('pedidos')
-        .select('*')
+        .select('*, pedido_itens(*)')
         .eq('id', params.id)
         .eq('loja_id', tenant!.id)
         .single()

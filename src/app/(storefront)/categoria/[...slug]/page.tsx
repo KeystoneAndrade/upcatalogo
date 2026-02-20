@@ -37,7 +37,7 @@ export default async function CategoryPage({ params }: { params: { slug: string[
   // Buscar produtos APENAS desta categoria específica (não das descendentes)
   const { data: products } = await supabase
     .from('produtos')
-    .select('*')
+    .select('*, produtos_variacoes(*)')
     .eq('loja_id', tenant.id)
     .eq('is_active', true)
     .eq('categoria_id', currentCategory.id)

@@ -30,14 +30,14 @@ export default async function OrderDetailPage({ params }: { params: { id: string
 
   const { data: order } = await supabase
     .from('pedidos')
-    .select('*')
+    .select('*, pedido_itens(*)')
     .eq('id', params.id)
     .eq('loja_id', tenant!.id)
     .single()
 
   if (!order) notFound()
 
-  const items = (order.items as any[]) || []
+  const items = (order.pedido_itens as any[]) || []
   const address = order.address as any
 
   return (
@@ -97,21 +97,26 @@ export default async function OrderDetailPage({ params }: { params: { id: string
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {items.map((item: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between border-b pb-3 last:border-0">
-                    <div className="flex items-center space-x-3">
-                      {item.image_url && (
-                        <img src={item.image_url} alt={item.name} className="h-12 w-12 rounded object-cover" />
-                      )}
-                      <div>
-                        <p className="font-medium">{item.name}</p>
-                        {item.variant && <p className="text-sm text-muted-foreground">{item.variant}</p>}
-                        <p className="text-sm text-muted-foreground">Qtd: {item.quantity}</p>
+                {items.map((item: any, i: number) => {
+                  const variantLabel = item.attributes?.combination_string ||
+                    (item.attributes ? Object.entries(item.attributes).map(([k, v]) => `${k}: ${v}`).join(' / ') : null)
+
+                  return (
+                    <div key={i} className="flex items-center justify-between border-b pb-3 last:border-0">
+                      <div className="flex items-center space-x-3">
+                        {item.image_url && (
+                          <img src={item.image_url} alt={item.name} className="h-12 w-12 rounded object-cover" />
+                        )}
+                        <div>
+                          <p className="font-medium">{item.name}</p>
+                          {variantLabel && <p className="text-sm text-muted-foreground">{variantLabel}</p>}
+                          <p className="text-sm text-muted-foreground">Qtd: {item.quantity}</p>
+                        </div>
                       </div>
+                      <p className="font-medium">{formatCurrency(item.price_at_purchase * item.quantity)}</p>
                     </div>
-                    <p className="font-medium">{formatCurrency(item.price * item.quantity)}</p>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
               <div className="mt-4 pt-4 border-t space-y-2">
                 <div className="flex justify-between text-sm">

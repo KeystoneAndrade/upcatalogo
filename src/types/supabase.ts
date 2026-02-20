@@ -433,7 +433,6 @@ export type Database = {
           discount: number | null
           id: string
           internal_notes: string | null
-          items: Json
           loja_id: string
           melhor_envio_label_url: string | null
           melhor_envio_protocol: string | null
@@ -469,7 +468,6 @@ export type Database = {
           discount?: number | null
           id?: string
           internal_notes?: string | null
-          items: Json
           loja_id: string
           melhor_envio_label_url?: string | null
           melhor_envio_protocol?: string | null
@@ -505,7 +503,6 @@ export type Database = {
           discount?: number | null
           id?: string
           internal_notes?: string | null
-          items?: Json
           loja_id?: string
           melhor_envio_label_url?: string | null
           melhor_envio_protocol?: string | null
@@ -578,7 +575,6 @@ export type Database = {
           stock_quantity: number | null
           tags: string[] | null
           updated_at: string | null
-          variants: Json | null
           weight: number | null
           width: number | null
         }
@@ -608,7 +604,6 @@ export type Database = {
           stock_quantity?: number | null
           tags?: string[] | null
           updated_at?: string | null
-          variants?: Json | null
           weight?: number | null
           width?: number | null
         }
@@ -638,7 +633,6 @@ export type Database = {
           stock_quantity?: number | null
           tags?: string[] | null
           updated_at?: string | null
-          variants?: Json | null
           weight?: number | null
           width?: number | null
         }

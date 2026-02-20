@@ -43,24 +43,56 @@ interface VariantSelectorProps {
     image_url: string | null
     manage_stock: boolean
     stock_quantity: number
-    variants: any
+    produtos_variacoes?: any[]
   }
 }
 
-function parseVariants(variants: any): VariantsData | null {
-  if (!variants) return null
-  if (Array.isArray(variants) && variants.length === 0) return null
-  if (variants.attributes && Array.isArray(variants.attributes) && variants.attributes.length > 0) {
-    return variants as VariantsData
+function parseVariacoes(rows: any[] | undefined): VariantsData | null {
+  if (!rows || !Array.isArray(rows) || rows.length === 0) return null
+
+  const attrsMap: Record<string, Set<string>> = {}
+  const items: VariantItem[] = []
+
+  for (const row of rows) {
+    // attributes armazenado no db como Record<string, string> ("Cor": "Azul")
+    const combination = row.attributes || {}
+    for (const [k, v] of Object.entries(combination)) {
+      if (!attrsMap[k]) attrsMap[k] = new Set()
+      attrsMap[k].add(String(v))
+    }
+
+    items.push({
+      id: row.id,
+      combination,
+      price: row.price,
+      compare_at_price: row.compare_at_price,
+      sku: row.sku || '',
+      stock_quantity: row.stock_quantity,
+      manage_stock: row.manage_stock, // Se a variation for criada sem, usamos true for safety aqui? Ou db default resolve.
+      image_url: row.image_url,
+      is_active: row.is_active,
+      weight: row.weight,
+      height: row.height,
+      width: row.width,
+      length: row.length,
+    })
   }
-  return null
+
+  const attributes = Object.entries(attrsMap).map(([name, set]) => ({
+    name,
+    options: Array.from(set)
+  }))
+
+  if (attributes.length === 0) return null
+
+  return { attributes, items }
 }
 
 export function VariantSelector({ product }: VariantSelectorProps) {
   const addItem = useCartStore((s) => s.addItem)
   const openMiniCart = useCartStore((s) => s.openMiniCart)
   const settings = useTenantSettings()
-  const variantsData = parseVariants(product.variants)
+  const variantsData = useMemo(() => parseVariacoes(product.produtos_variacoes), [product.produtos_variacoes])
 
   const [selected, setSelected] = useState<Record<string, string>>({})
 

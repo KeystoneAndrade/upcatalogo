@@ -13,7 +13,7 @@ export default async function EditProductPage({ params }: { params: { id: string
 
   const { data: product } = await supabase
     .from('produtos')
-    .select('*')
+    .select('*, produtos_variacoes(*)')
     .eq('id', params.id)
     .eq('loja_id', tenant!.id)
     .single()

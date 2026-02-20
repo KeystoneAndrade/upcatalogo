@@ -24,13 +24,40 @@ interface ProductFormProps {
 }
 
 function parseVariantsFromProduct(product: any): VariantsData | null {
-  if (!product?.variants) return null
-  const v = product.variants
-  if (Array.isArray(v) && v.length === 0) return null
-  if (v.attributes && Array.isArray(v.attributes) && v.attributes.length > 0) {
-    return v as VariantsData
+  const rows = product?.produtos_variacoes
+  if (!rows || !Array.isArray(rows) || rows.length === 0) return null
+
+  const attrsMap: Record<string, Set<string>> = {}
+  for (const row of rows) {
+    const combo = row.attributes || {}
+    for (const [k, v] of Object.entries(combo)) {
+      if (!attrsMap[k]) attrsMap[k] = new Set()
+      attrsMap[k].add(String(v))
+    }
   }
-  return null
+
+  const attributes = Object.entries(attrsMap).map(([name, set]) => ({
+    name,
+    options: Array.from(set)
+  }))
+
+  const items = rows.map((row: any) => ({
+    id: row.id,
+    combination: row.attributes || {},
+    price: row.price,
+    compare_at_price: row.compare_at_price,
+    sku: row.sku || '',
+    stock_quantity: row.stock_quantity,
+    manage_stock: row.manage_stock,
+    image_url: row.image_url,
+    is_active: row.is_active,
+    weight: row.weight,
+    height: row.height,
+    width: row.width,
+    length: row.length,
+  }))
+
+  return { attributes, items }
 }
 
 export function ProductForm({ tenantId, categories, product }: ProductFormProps) {
@@ -139,7 +166,6 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
       featured,
       image_url: productImages[0] || null,
       images: productImages.slice(1),
-      variants,
       weight: finalWeight,
       height: finalHeight,
       width: finalWidth,
@@ -241,8 +267,8 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
 
     // Collect all image URLs to delete from storage
     const allImageUrls: string[] = [...productImages]
-    if (product?.variants?.items) {
-      for (const variant of product.variants.items) {
+    if (product?.produtos_variacoes) {
+      for (const variant of product.produtos_variacoes) {
         if (variant.image_url) allImageUrls.push(variant.image_url)
       }
     }

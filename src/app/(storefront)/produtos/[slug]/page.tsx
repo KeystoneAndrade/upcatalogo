@@ -8,10 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { ProductImageGallery } from '@/components/storefront/product-image-gallery'
 
 function hasVariants(product: any): boolean {
-  const v = product.variants
-  if (!v) return false
-  if (Array.isArray(v) && v.length === 0) return false
-  return !!(v.attributes && Array.isArray(v.attributes) && v.attributes.length > 0 && v.items?.length > 0)
+  return Array.isArray(product.produtos_variacoes) && product.produtos_variacoes.length > 0
 }
 
 export default async function ProductDetailPage({ params }: { params: { slug: string } }) {
@@ -21,7 +18,7 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
   const supabase = createClient()
   const { data: product } = await supabase
     .from('produtos')
-    .select('*')
+    .select('*, produtos_variacoes(*)')
     .eq('loja_id', tenant.id)
     .eq('slug', params.slug)
     .eq('is_active', true)
@@ -37,9 +34,9 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
 
   // Coletar imagens das variacoes (sem duplicar)
   const variantImages = productHasVariants
-    ? (product.variants.items as any[])
-        .map((v: any) => v.image_url)
-        .filter(Boolean)
+    ? (product.produtos_variacoes as any[])
+      .map((v: any) => v.image_url)
+      .filter(Boolean)
     : []
 
   const images = [...new Set([
