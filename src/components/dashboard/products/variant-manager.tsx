@@ -30,6 +30,7 @@ import {
   Settings2,
   ImageIcon,
 } from 'lucide-react'
+import { ImageUpload } from './image-upload'
 
 export interface VariantAttribute {
   name: string
@@ -63,6 +64,8 @@ interface VariantManagerProps {
   basePrice: number
   manageStockGlobal: boolean
   onManageStockChange: (v: boolean) => void
+  tenantId: string
+  productId: string
 }
 
 function generateId() {
@@ -110,9 +113,11 @@ interface VariantEditDialogProps {
   onOpenChange: (open: boolean) => void
   onSave: (item: VariantItem) => void
   manageStock: boolean
+  tenantId: string
+  productId: string
 }
 
-function VariantEditDialog({ item, open, onOpenChange, onSave, manageStock }: VariantEditDialogProps) {
+function VariantEditDialog({ item, open, onOpenChange, onSave, manageStock, tenantId, productId }: VariantEditDialogProps) {
   const [editItem, setEditItem] = useState<VariantItem | null>(null)
 
   // Sync when opening
@@ -290,31 +295,21 @@ function VariantEditDialog({ item, open, onOpenChange, onSave, manageStock }: Va
             </div>
           </div>
 
-          {/* URL da imagem */}
+          {/* Imagem */}
           <hr />
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-medium">
               <ImageIcon className="h-4 w-4 text-purple-600" />
               Imagem
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">URL da imagem</Label>
-              <Input
-                value={editItem.image_url ?? ''}
-                onChange={(e) => updateField('image_url', e.target.value || null)}
-                placeholder="https://..."
-              />
-            </div>
-            {editItem.image_url && (
-              <div className="flex justify-center">
-                <img
-                  src={editItem.image_url}
-                  alt="Preview"
-                  className="h-20 w-20 object-cover rounded-lg border"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                />
-              </div>
-            )}
+            <ImageUpload
+              value={editItem.image_url}
+              onChange={(url) => updateField('image_url', url)}
+              tenantId={tenantId}
+              productId={productId}
+              size="md"
+              aspectRatio={1}
+            />
           </div>
         </div>
 
@@ -517,7 +512,7 @@ function BulkEditDialog({ open, onOpenChange, itemCount, onApply, manageStock }:
 
 // ====== Main Component ======
 
-export function VariantManager({ value, onChange, basePrice, manageStockGlobal, onManageStockChange }: VariantManagerProps) {
+export function VariantManager({ value, onChange, basePrice, manageStockGlobal, onManageStockChange, tenantId, productId }: VariantManagerProps) {
   const [newOptionInputs, setNewOptionInputs] = useState<Record<number, string>>({})
   const [editingItem, setEditingItem] = useState<VariantItem | null>(null)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
@@ -736,24 +731,21 @@ export function VariantManager({ value, onChange, basePrice, manageStockGlobal, 
             <Badge variant="secondary" className="gap-1">
               {stats.active} {stats.active === 1 ? 'ativa' : 'ativas'}
             </Badge>
-            {stats.active === 0 && (
-              <Badge variant="destructive" className="gap-1 animate-pulse">
+            {stats.inactive > 0 && (
+              <Badge variant="outline" className="gap-1 text-muted-foreground">
                 <EyeOff className="h-3 w-3" />
-                Nenhuma variacao ativa
+                {stats.inactive} {stats.inactive === 1 ? 'oculta' : 'ocultas'}
               </Badge>
             )}
-            {stats.inactive > 0 && (
-              {
-                stats.priceRange && (
-                  <Badge variant="outline" className="gap-1">
-                    <DollarSign className="h-3 w-3" />
-                    {stats.priceRange.min === stats.priceRange.max
-                      ? formatPrice(stats.priceRange.min)
-                      : `${formatPrice(stats.priceRange.min)} - ${formatPrice(stats.priceRange.max)}`
-                    }
-                  </Badge>
-                )
-              }
+            {stats.priceRange && (
+              <Badge variant="outline" className="gap-1">
+                <DollarSign className="h-3 w-3" />
+                {stats.priceRange.min === stats.priceRange.max
+                  ? formatPrice(stats.priceRange.min)
+                  : `${formatPrice(stats.priceRange.min)} - ${formatPrice(stats.priceRange.max)}`
+                }
+              </Badge>
+            )}
             {stats.totalStock !== null && (
               <Badge variant="outline" className="gap-1">
                 <Archive className="h-3 w-3" />
@@ -906,6 +898,8 @@ export function VariantManager({ value, onChange, basePrice, manageStockGlobal, 
         onOpenChange={setEditDialogOpen}
         onSave={handleSaveVariant}
         manageStock={manageStockGlobal}
+        tenantId={tenantId}
+        productId={productId}
       />
 
       <BulkEditDialog

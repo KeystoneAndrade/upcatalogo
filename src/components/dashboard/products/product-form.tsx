@@ -14,6 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, Trash2, Package } from 'lucide-react'
 import { toast } from 'sonner'
 import { VariantManager, VariantsData } from './variant-manager'
+import { ProductGallery } from './product-gallery'
+import { deleteProductImages } from '@/lib/image-upload'
 
 interface ProductFormProps {
   tenantId: string
@@ -50,6 +52,17 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
   const existingManageStockVariants = existingVariants?.items?.some(i => i.manage_stock) ?? false
   const [manageStockVariants, setManageStockVariants] = useState(existingManageStockVariants)
 
+  // Imagens do produto
+  const [tempProductId] = useState(() => product?.id || `temp-${crypto.randomUUID()}`)
+  const [productImages, setProductImages] = useState<string[]>(() => {
+    const imgs: string[] = []
+    if (product?.image_url) imgs.push(product.image_url)
+    if (Array.isArray(product?.images)) {
+      imgs.push(...(product.images as string[]).filter(Boolean))
+    }
+    return imgs
+  })
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
@@ -57,7 +70,6 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
     const formData = new FormData(e.currentTarget)
     const name = formData.get('name') as string
     const description = formData.get('description') as string
-    const imageUrl = formData.get('image_url') as string
     const categoryId = formData.get('category_id') as string
     const isActive = formData.get('is_active') === 'on'
     const featured = formData.get('featured') === 'on'
@@ -125,7 +137,8 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
       manage_stock: finalManageStock,
       is_active: isActive,
       featured,
-      image_url: imageUrl || null,
+      image_url: productImages[0] || null,
+      images: productImages.slice(1),
       variants,
       weight: finalWeight,
       height: finalHeight,
@@ -163,6 +176,15 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
   async function handleDelete() {
     if (!confirm('Tem certeza que deseja excluir este produto?')) return
     setDeleting(true)
+
+    // Collect all image URLs to delete from storage
+    const allImageUrls: string[] = [...productImages]
+    if (product?.variants?.items) {
+      for (const variant of product.variants.items) {
+        if (variant.image_url) allImageUrls.push(variant.image_url)
+      }
+    }
+
     const supabase = createClient()
     const { error } = await supabase.from('products').delete().eq('id', product.id)
     if (error) {
@@ -170,6 +192,12 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
       setDeleting(false)
       return
     }
+
+    // Clean up storage images (fire-and-forget)
+    if (allImageUrls.length > 0) {
+      deleteProductImages(allImageUrls).catch(() => {})
+    }
+
     toast.success('Produto excluido!')
     router.push('/dashboard/products')
     router.refresh()
@@ -192,8 +220,13 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
             <Textarea id="description" name="description" rows={4} defaultValue={product?.description} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="image_url">URL da imagem</Label>
-            <Input id="image_url" name="image_url" placeholder="https://..." defaultValue={product?.image_url} />
+            <Label>Imagens do produto</Label>
+            <ProductGallery
+              images={productImages}
+              onChange={setProductImages}
+              tenantId={tenantId}
+              productId={tempProductId}
+            />
           </div>
         </CardContent>
       </Card>
@@ -233,6 +266,8 @@ export function ProductForm({ tenantId, categories, product }: ProductFormProps)
               basePrice={product?.price || 0}
               manageStockGlobal={manageStockVariants}
               onManageStockChange={setManageStockVariants}
+              tenantId={tenantId}
+              productId={tempProductId}
             />
           </CardContent>
         )}

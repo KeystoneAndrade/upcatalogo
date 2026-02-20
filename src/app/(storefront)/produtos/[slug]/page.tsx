@@ -5,6 +5,7 @@ import { formatCurrency, calculateDiscount } from '@/lib/utils'
 import { AddToCartButton } from '@/components/storefront/add-to-cart-button'
 import { VariantSelector } from '@/components/storefront/variant-selector'
 import { Badge } from '@/components/ui/badge'
+import { ProductImageGallery } from '@/components/storefront/product-image-gallery'
 
 function hasVariants(product: any): boolean {
   const v = product.variants
@@ -39,30 +40,7 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
   return (
     <div className="max-w-4xl mx-auto">
       <div className="grid md:grid-cols-2 gap-8">
-        <div className="space-y-4">
-          {images.length > 0 ? (
-            <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-              <img
-                src={images[0]!}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ) : (
-            <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center text-gray-300">
-              Sem imagem
-            </div>
-          )}
-          {images.length > 1 && (
-            <div className="grid grid-cols-4 gap-2">
-              {images.slice(1).map((img, i) => (
-                <div key={i} className="aspect-square bg-gray-100 rounded overflow-hidden">
-                  <img src={img!} alt="" className="w-full h-full object-cover" />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <ProductImageGallery images={images as string[]} productName={product.name} />
 
         <div className="space-y-6">
           <div>

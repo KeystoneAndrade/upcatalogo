@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { formatCurrency, calculateDiscount } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { useCartStore } from '@/store/cart-store'
@@ -65,9 +66,11 @@ export function ProductCard({ product }: ProductCardProps) {
       <div className="bg-white rounded-lg border overflow-hidden transition-shadow hover:shadow-md">
         <div className="aspect-square relative bg-gray-100">
           {product.image_url ? (
-            <img
+            <Image
               src={product.image_url}
               alt={product.name}
+              width={400}
+              height={400}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform"
             />
           ) : (

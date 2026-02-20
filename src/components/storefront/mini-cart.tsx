@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useCartStore } from '@/store/cart-store'
 import { formatCurrency } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -84,9 +85,11 @@ export function MiniCart() {
                 return (
                   <div key={key} className="flex gap-3">
                     {item.image ? (
-                      <img
+                      <Image
                         src={item.image}
                         alt={item.name}
+                        width={64}
+                        height={64}
                         className="h-16 w-16 rounded-md object-cover flex-shrink-0"
                       />
                     ) : (
