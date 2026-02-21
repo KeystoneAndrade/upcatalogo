@@ -17,7 +17,7 @@ export async function getProducts(supabase: SupabaseClient, {
 }: ProductFilters) {
     let query = supabase
         .from('produtos')
-        .select('*, categories(name), produtos_variacoes(*)')
+        .select('*, produtos_variacoes(*)')
         .eq('loja_id', loja_id)
         .order(order_by)
         .limit(limit)
