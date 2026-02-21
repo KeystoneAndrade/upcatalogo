@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, Trash2, Package } from 'lucide-react'
 import { toast } from 'sonner'
 import { VariantManager, VariantsData } from './variant-manager'
+import { ProductGallery } from './product-gallery'
 import { deleteProductImages } from '@/lib/image-upload'
 import { saveProduct, deleteProduct } from '@/services/product-service'
 
