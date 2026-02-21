@@ -2,35 +2,25 @@ import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Package, ShoppingCart, DollarSign, TrendingUp } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import { getTenant } from '@/services/tenant-service'
 
 export default async function DashboardPage() {
   const supabase = createClient()
+  const tenant = await getTenant(supabase)
+  const tenantId = tenant.id
 
-  const { data: { session } } = await supabase.auth.getSession()
-  const { data: tenant } = await supabase
-    .from('lojas')
-    .select('id')
-    .eq('proprietario_id', session!.user.id)
-    .single()
-
-  const tenantId = tenant!.id
-
-  const [productsRes, ordersRes, revenueRes] = await Promise.all([
+  const [productsRes, ordersRes, revenueRes, recentOrdersRes] = await Promise.all([
     supabase.from('produtos').select('id', { count: 'exact' }).eq('loja_id', tenantId),
     supabase.from('pedidos').select('id', { count: 'exact' }).eq('loja_id', tenantId),
     supabase.from('pedidos').select('total').eq('loja_id', tenantId).eq('status', 'delivered'),
+    supabase.from('pedidos').select('*').eq('loja_id', tenantId).order('created_at', { ascending: false }).limit(5)
   ])
 
   const totalProducts = productsRes.count || 0
   const totalOrders = ordersRes.count || 0
   const totalRevenue = (revenueRes.data || []).reduce((acc, o) => acc + Number(o.total), 0)
+  const recentOrders = recentOrdersRes.data || []
 
-  const { data: recentOrders } = await supabase
-    .from('pedidos')
-    .select('*')
-    .eq('loja_id', tenantId)
-    .order('created_at', { ascending: false })
-    .limit(5)
 
   return (
     <div className="space-y-6">
